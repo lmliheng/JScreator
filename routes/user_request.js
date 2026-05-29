@@ -28,6 +28,8 @@ router.get('/userInfo', async (req, res) => {
                 message: '找不到用户信息，是否未登录或登录过期'
             })
         }
+
+
         const user_permission = user_info.map(
             item => {
                 return { permission_name: item.permission_name, permission_id: item.permission_id }
@@ -154,7 +156,7 @@ router.post('/resetPassword', async (req, res) => {
 
 // 获取所有用户信息
 router.get('/getAllUserInfo', async (req, res) => {
-    const  token  = req.headers.authorization
+    const token = req.headers.authorization
     const decoded = tokenValidator(token)
     if (!decoded) {
         return res.status(401).json({

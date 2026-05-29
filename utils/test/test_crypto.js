@@ -6,7 +6,7 @@ const { ToHash, ComparePassword } = require('../crypto_password')
 
 async function test() {
     // 测试密码加密
-    const testPassword = '123456'
+    const testPassword = '12345678aA.'
     const hashedPassword = ToHash(testPassword)
     console.log('加密后的密码:', hashedPassword);
     // 测试密码验证

@@ -18,6 +18,7 @@ const token_getUserInfo = async (token) => {
         u.id = ${id};
         `
         const [rows] = await pool.query(sql)  // row 是一个对象数组，每个对象对应数据库中的的一条记录
+        
         if (rows.length === 0) {
             return null
         }
