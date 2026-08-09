@@ -1,9 +1,14 @@
 const jwt = require('jsonwebtoken')
-const dotenv = require('dotenv')
-dotenv.config()
-
 const tokenCreator = (user) => {
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign(
+        {
+            id: user.id
+        },
+        process.env.JWT_SECRET,
+        {
+            expiresIn: '7d'
+        }
+    );
     return token
 }
 
@@ -15,6 +20,7 @@ const tokenValidator = (token) => {
         return null;
     }
 }
+
 module.exports = {
     tokenCreator, tokenValidator
 }
