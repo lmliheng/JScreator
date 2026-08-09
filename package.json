@@ -8,6 +8,7 @@
     "test": "node --test"
   },
   "dependencies": {
+    "ali-oss": "^6.23.0",
     "axios": "^1.16.0",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
