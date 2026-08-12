@@ -1,0 +1,25 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --color-primary: #FFD600;
+}
+
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --border-color: #e5e7eb;
+    --card-bg: #ffffff;
+    --nav-bg: #ffffff;
+}
+
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+* {
+    border-color: var(--border-color);
+}

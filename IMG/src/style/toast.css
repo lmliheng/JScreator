@@ -1,0 +1,66 @@
+/* src/assets/toast.css */
+
+#my-toast-container {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 19999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.my-toast {
+  padding: 10px 22px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  opacity: 0;
+  transform: translateY(-30px) scale(0.85);
+  pointer-events: auto;
+  max-width: 70vw;
+  word-break: break-word;
+  white-space: nowrap;
+}
+
+/* 入场 */
+.my-toast-enter {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* 离场 */
+.my-toast-leave {
+  opacity: 0;
+  transform: translateY(-30px) scale(0.95);
+}
+
+/* 类型颜色 */
+.my-toast-info    { background: #909399; }
+.my-toast-success { background: #67c23a; }
+.my-toast-error   { background: #f56c6c; }
+.my-toast-warning { background: #e6a23c; }
+.my-toast-loading { background: #409eff; }
+
+/* loading 旋转 */
+.my-toast-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: toast-spin 0.7s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes toast-spin {
+  to { transform: rotate(360deg); }
+}
