@@ -15,7 +15,7 @@ const props = defineProps({
     default: () => false
   }}
 )
-
+console.log(props.UserInfo)
 import {
   User,
   Menu as IconMenu,
@@ -39,8 +39,8 @@ onMounted(() => {
   >
   
   <div id="aside-logo">
-  <el-avatar id="header-avatar" shape="square" size="default" :src="props.UserInfo?.avatar" />
-  <span id="logo-text" v-if="!props.isCollapse">{{ props.UserInfo?.username }}</span>
+  <el-avatar id="header-avatar" shape="square" size="default" :src="props.UserInfo?.user_detail?.avatar" />
+  <span id="logo-text" v-if="!props.isCollapse">{{ props.UserInfo?.user_detail?.username }}</span>
   </div>
   
    <el-menu-item index="/user-profile">

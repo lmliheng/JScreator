@@ -1,11 +1,14 @@
 {
-  "name": "fast-web",
+  "name": "JScreate",
   "version": "1.0.2",
-  "description": "快速启动一个Node web 应用",
+  "description": "Node web backApp",
   "main": "server.js",
+  "author": "lmliheng",
+  "license": "MIT",
   "scripts": {
-    "start": "nodemon server.js",
-    "test": "node --test"
+    "dev": "nodemon server.js --dev",
+    "test": "node test",
+    "build": "rollup -c"
   },
   "dependencies": {
     "ali-oss": "^6.23.0",
@@ -20,6 +23,7 @@
     "nodemon": "^3.1.2",
     "openai": "^6.36.0"
   },
-  "author": "lmliheng",
-  "license": "MIT"
+  "devDependencies": {
+    "rollup": "^4.62.5"
+  }
 }

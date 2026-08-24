@@ -1,34 +1,35 @@
 const express = require('express')
-const router = express.Router()
-const { token_getUserInfo, user_updatePassword, user_getAll } = require('../utils/db_curd')
+const { getUserInfoByToken, user_updatePassword, user_getAll } = require('../utils/db_curd')
 const { tokenCreator, tokenValidator } = require('../utils/token_creator')
 const { user_update } = require('../utils/db_curd')
 const { ToHash } = require('../utils/crypto_password')
 
-//========================================
-//table: user
-//id: 用户id
-//username: 用户名
-//email: 邮箱
-//password: 密码
-//avatar: 头像
-//created_at: 创建时间
-//updated_at: 更新时间
-//========================================
 
-// 获取用户信息
-router.get('/userInfo', async (req, res) => {
+/**
+ * @获取用户信息
+ */
+const router = express.Router()
+router.get('/sys/profile', async (req, res) => {
+
     try {
+        // req.headers.authorization接受header里的authorization/Authorization
         const token = req.headers.authorization
-        const user_info = await token_getUserInfo(token)
+        const user_info = await getUserInfoByToken(token)
         if (user_info === null) {
-            return res.status(401).json({
+            return res.json({
                 code: 401,
                 success: false,
                 message: '找不到用户信息，是否未登录或登录过期'
             })
         }
 
+        if (user_info === 'db_error') {
+            return res.json({
+                code: 500,
+                success: false,
+                message: '数据库服务错误'
+            })
+        }
 
         const user_permission = user_info.map(
             item => {
@@ -49,11 +50,13 @@ router.get('/userInfo', async (req, res) => {
                 login_time: new Date().toLocaleString()
             }
         })
+
     } catch (error) {
         console.error('获取用户信息错误:', error)
-        res.status(500).json({
+        res.json({
+            code: 500,
             success: false,
-            message: '服务器内部错误'
+            message: '获取用户信息失败'
         })
     }
 })

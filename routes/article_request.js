@@ -22,7 +22,8 @@ const { tokenValidator } = require('../utils/token_creator')
 
 // 查询本用户文章列表 慎用
 router.get('/article/getAll', async (req, res) => {
-    const token = req.headers.authorization
+    
+    const token = req.headers.Authorization
     const decoded = tokenValidator(token)
     if (!decoded) {
         return res.status(401).json({

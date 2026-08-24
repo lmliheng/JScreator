@@ -42,6 +42,7 @@ async function testConnection(DBName) {
             return false;
         }
     }
+
 };
 
 module.exports = {

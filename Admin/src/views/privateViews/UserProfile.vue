@@ -4,35 +4,37 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const authStore = useAuthStore();
 
-const permissionChange= (val) => {
-   switch(val){
-    case 'distributeRole':
-        return t('distribute_role');
-    case 'importUser':
-        return t('import_user');
-    case 'removeUser':
-        return t('remove_user');
-    case 'distributePermission':
-        return t('distribute_permission');
-    default:
-        return t('unknown_permission');
-   }
-    
+const permissionRead = (val) => {
+    switch (val) {
+        case 'user:create':
+            return t('创建用户');
+        case 'user:read':
+            return t('读取用户信息');
+        case 'user:update':
+            return t('删除用户');
+        case 'user:delete':
+            return t('distribute_permission');
+        default:
+            return t('unknown_permission');
+    }
+
 }
 
 </script>
 <template>
-    <div class="user-profile" >
-         <div class="block">
-          <el-avatar :size="100" :src="authStore.userInfo.avatar" />
-          <p>{{ $t('user_id') }}：{{ authStore?.userInfo?.id  }}</p>
-          <p>{{ $t('role') }}：{{ authStore?.userInfo?.title  }}</p>
-          <p>{{ $t('username') }}：{{ authStore?.userInfo?.username }}</p>
-          <p>{{ $t('permission') }}：</p>
-          <ul>
-            <li v-for="item in authStore?.userInfo?.permission?.points" :key="item"  id="permission">{{ permissionChange(item) }}</li>
-            
-          </ul>
+    <div class="user-profile">
+        <div class="block">
+            <el-avatar :size="100" :src="authStore.userInfo?.user_detail?.avatar" />
+            <p>{{ $t('user_id') }}：{{ authStore?.userInfo?.user_detail?.id }}</p>
+            <p>{{ $t('role') }}：{{ authStore?.userInfo?.user_detail?.role_name }}</p>
+            <p>{{ $t('username') }}：{{ authStore?.userInfo?.user_detail?.username }}</p>
+            <p>{{ $t('permission') }}：</p>
+            <ul>
+                <li v-for="item in authStore?.userInfo?.user_permission" :key="item" id="permission">
+                    {{ permissionRead(item['permission_name']) }}
+                </li>
+
+            </ul>
         </div>
     </div>
 </template>
@@ -42,8 +44,8 @@ const permissionChange= (val) => {
     border: 1px solid #e4e7ed;
     padding: 20px;
 }
-#permission{
+
+#permission {
     list-style-type: decimal;
 }
-
 </style>

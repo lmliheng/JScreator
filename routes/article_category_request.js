@@ -18,6 +18,7 @@ const { tokenValidator } = require('../utils/token_creator')
 //updated_at: 更新时间
 //========================================
 // 查询所有分类列表（管理员 后台使用）
+
 router.get('/article_category/getAll', async (req, res) => {
     const token = req.headers.authorization
     const decoded = tokenValidator(token)

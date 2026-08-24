@@ -5,7 +5,8 @@ export const login = (account, password) => api({
     method: 'post',
     data: {
         username: account,
-        password: md5(password)
+        password: password
+        //md5(password)
     }
 })
 
@@ -21,7 +22,6 @@ export const requestUser = () => api({
 })
 
 export const requestUserDetail = (id) => api({
-    // _id
     url: `/user-manage/detail/${id}`,
     method: 'get'
 })

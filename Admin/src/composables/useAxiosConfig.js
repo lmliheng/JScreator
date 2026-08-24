@@ -1,18 +1,19 @@
 import axios from 'axios'
 
 const api = axios.create({
-    baseURL: '/api',
+    baseURL: 'http://127.0.0.1:7000',
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
-        'icode': 'helloqianduanxunlianying'
+        // 'icode': 'helloqianduanxunlianying'
     }
 })
 
 api.interceptors.request.use(
     config => {
-        if (localStorage.getItem('token')) {
-            config.headers.Authorization = 'Bearer ' + localStorage.getItem('token')
+        if (localStorage.getItem('auth')) {
+            let auth = localStorage.getItem('auth')
+            config.headers.Authorization = 'Bearer ' + JSON.parse(auth).token
         }
         return config
     },

@@ -3,9 +3,17 @@ const { ComparePassword } = require('./crypto_password')
 const { tokenValidator } = require('../utils/token_creator')
 const { ToHash } = require('./crypto_password')
 
-const token_getUserInfo = async (token) => {
+const getUserInfoByToken = async (token) => {
+
     const decoded = await tokenValidator(token)
     const id = decoded.id
+    if (id == undefined) {
+        if (process.argv[2] === '--dev') {
+            console.log(token)
+            console.log(decoded)
+        }
+        return "db_error"
+    }
     try {
         const sql =
             `
@@ -18,7 +26,7 @@ const token_getUserInfo = async (token) => {
         u.id = ${id};
         `
         const [rows] = await pool.query(sql)  // row 是一个对象数组，每个对象对应数据库中的的一条记录
-        
+
         if (rows.length === 0) {
             return null
         }
@@ -26,8 +34,11 @@ const token_getUserInfo = async (token) => {
     } catch (error) {
         console.error('根据用户token查询用户信息错误:', error)
         throw error
+        return "db_error"
     }
 }
+
+
 
 const user_update = async (id, username, email) => {
     try {
@@ -55,9 +66,6 @@ const user_getAll = async () => {
         throw error
     }
 }
-
-
-
 
 
 
@@ -94,6 +102,7 @@ const login_loginByEmail = async (email, password) => {
         throw error
     }
 }
+
 
 const login_loginByUsername = async (username, password) => {
     try {
@@ -516,7 +525,7 @@ module.exports = {
     article_category_set, // 给文章设置分类
 
     // 用户相关
-    token_getUserInfo, // 获取用户信息
+    getUserInfoByToken, // 获取用户信息
     user_update, // 更新用户信息
     role_getAll, // 查询所有角色
     user_getAll, // 查询所有用户信息

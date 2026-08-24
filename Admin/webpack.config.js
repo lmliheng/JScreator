@@ -7,7 +7,7 @@ const dotenv = require('dotenv')
 
 
 module.exports = (env = {}) => {
-    const isProduction = env.NODE_ENV === 'production'
+    const isProduction = process.env.NODE_ENV === 'production'
     // const isProduction = env.production === true
     // const mode = isProduction ? '.env.production' : '.env.development'
     const envPath = `.env.${process.env.NODE_ENV || 'development'}`
@@ -93,21 +93,22 @@ module.exports = (env = {}) => {
 
         devServer: {
             port: 8085,
-            static: './dist',
+            // static: './dist'
+            static: './public',
             hot: true,
             open: true,
             liveReload: false,
             client: {
                 overlay: false
             },
-            proxy: [
-                {
-                    context: ['/api'],
-                    target: 'https://api.imooc-admin.lgdsunday.club',
-                    changeOrigin: true,
-                    secure: true
-                }
-            ]
+            // proxy: [
+            //     {
+            //         context: ['/api'],
+            //         target: 'https://api.imooc-admin.lgdsunday.club',
+            //         changeOrigin: true,
+            //         secure: true
+            //     }
+            // ]
         },
 
         // 开发环境优化
