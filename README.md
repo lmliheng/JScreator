@@ -1,14 +1,5 @@
 # Fast-NodeServer
 
-Node.js Express 快速构建的 RESTfulAPI应用
-
-使用commonJS模块化管理，从server.js统一启动
-
-utils下都是工具函数，在test目录下都有测试案例。在utils里的LLM_client目录下都是调用云端模型的，均使用fetch调用(目前不支持OpenAI SDK)。对象存储目录目前有阿里云oss 使用oss SDK。
-
-
-1. 双token机制
-
-2. 用户私人配置
-
-3. 管理员权限
+<img width="1295" height="912" alt="image" src="https://github.com/user-attachments/assets/efecf7ca-52aa-47cf-b453-279ed2927cba" />
+<img width="1160" height="913" alt="image" src="https://github.com/user-attachments/assets/5734b681-f37d-4098-af8f-724be752811d" />
+<img width="1240" height="858" alt="image" src="https://github.com/user-attachments/assets/6a6ff5f2-1c44-4323-8991-cc1d89107698" />
