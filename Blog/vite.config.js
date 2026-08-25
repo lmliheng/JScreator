@@ -16,3 +16,5 @@ export default defineConfig({
     port: 5173,
   },
 })
+
+// vite build 会自动读取 .env.production

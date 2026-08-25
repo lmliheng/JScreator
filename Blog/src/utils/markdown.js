@@ -6,18 +6,19 @@ const md = new MarkdownIt({
   linkify: true,
   breaks: true,
   highlight(str, lang) {
-    if (lang && hljs.getLanguage(lang)) {
+    const validLang = lang && hljs.getLanguage(lang) ? lang : ''
+    let codeHtml
+    if (validLang) {
       try {
-        return (
-          '<pre class="hljs"><code>' +
-          hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
-          '</code></pre>'
-        )
+        codeHtml = hljs.highlight(str, { language: validLang, ignoreIllegals: true }).value
       } catch {
-        /* fallthrough */
+        codeHtml = md.utils.escapeHtml(str)
       }
+    } else {
+      codeHtml = md.utils.escapeHtml(str)
     }
-    return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>'
+    // data-lang 供前端 mac 风格标题栏显示语言名
+    return '<pre class="hljs" data-lang="' + (validLang || 'text') + '"><code>' + codeHtml + '</code></pre>'
   },
 })
 

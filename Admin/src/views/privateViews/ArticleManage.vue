@@ -9,6 +9,9 @@ import {
     requestArticleCategoryList
 } from '@/composables/useRequest'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Notebook, FolderOpened, ChatDotRound } from '@element-plus/icons-vue'
+import CategoryManage from './CategoryManage.vue'
+import CommentManage from './CommentManage.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -22,6 +25,18 @@ const isAdminOrEditor = computed(() => {
     const name = String(detail.role_name || '').trim()
     return ['admin', 'editor', '超级管理员', '编辑'].includes(name)
 })
+
+// 仅管理员（role_id = 1）
+const isAdmin = computed(() => {
+    const detail = authStore.userInfo?.user_detail || {}
+    const id = Number(detail.role_id)
+    if (id === 1) return true
+    return String(detail.role_name || '').trim() === '超级管理员'
+})
+
+// 内嵌 tab：articles 文章列表 / categories 分类管理 / comments 评论管理（记忆上次选择）
+const activeTab = ref(localStorage.getItem('article_manage_tab') || 'articles')
+watch(activeTab, (v) => localStorage.setItem('article_manage_tab', v))
 
 const loading = ref(false)
 const articleList = ref([])
@@ -186,6 +201,11 @@ watch(isAdminOrEditor, () => {
 
 <template>
     <div>
+        <el-tabs v-model="activeTab" class="article-tabs">
+            <el-tab-pane name="articles">
+                <template #label>
+                    <span class="tab-label"><el-icon><Notebook /></el-icon><span>文章列表</span></span>
+                </template>
         <!-- 工具栏：搜索 + 分类筛选 + 写文章 -->
         <div class="toolbar">
             <div class="toolbar-filters">
@@ -294,10 +314,67 @@ watch(isAdminOrEditor, () => {
                 @current-change="handleCurrentChange"
             />
         </div>
+            </el-tab-pane>
+
+            <el-tab-pane v-if="isAdminOrEditor" name="categories">
+                <template #label>
+                    <span class="tab-label"><el-icon><FolderOpened /></el-icon><span>分类管理</span></span>
+                </template>
+                <CategoryManage />
+            </el-tab-pane>
+
+            <el-tab-pane v-if="isAdmin" name="comments">
+                <template #label>
+                    <span class="tab-label"><el-icon><ChatDotRound /></el-icon><span>评论管理</span></span>
+                </template>
+                <CommentManage />
+            </el-tab-pane>
+        </el-tabs>
     </div>
 </template>
 
 <style scoped>
+/* ---- Tabs 视觉升级 ---- */
+.article-tabs :deep(.el-tabs__header) {
+    margin-bottom: 0;
+    padding: 0 12px;
+    background-color: #f5f7fa;
+    border-radius: 10px 10px 0 0;
+    border-bottom: 1px solid #e4e7ed;
+}
+.article-tabs :deep(.el-tabs__item) {
+    height: 44px;
+    line-height: 44px;
+    padding: 0 18px;
+    font-weight: 500;
+    color: #606266;
+    transition: color 0.2s ease;
+}
+.article-tabs :deep(.el-tabs__item .el-icon) {
+    margin-right: 6px;
+    vertical-align: -2px;
+}
+.article-tabs :deep(.el-tabs__item.is-active) {
+    color: #409eff;
+    font-weight: 700;
+}
+.article-tabs :deep(.el-tabs__item:hover) {
+    color: #409eff;
+}
+.article-tabs :deep(.el-tabs__active-bar) {
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background-color: #409eff;
+}
+.article-tabs :deep(.el-tabs__content) {
+    padding-top: 16px;
+}
+.tab-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .toolbar {
     display: flex;
     justify-content: space-between;

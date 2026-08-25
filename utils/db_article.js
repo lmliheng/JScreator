@@ -233,10 +233,11 @@ const article_update = async (article_id, { title, content, status, category_ids
 }
 
 /**
- * 删除文章（中间表通过外键 ON DELETE CASCADE 级联删除）
+ * 删除文章（中间表通过外键 ON DELETE CASCADE 级联删除；评论无外键，先手动清掉该文章评论，避免孤儿数据）
  */
 const article_delete = async (article_id) => {
     try {
+        await pool.query('DELETE FROM comment WHERE article_id = ?', [article_id])
         await pool.query('DELETE FROM article WHERE article_id = ?', [article_id])
         return true
     } catch (error) {

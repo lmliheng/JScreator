@@ -275,3 +275,29 @@ export const requestSystemMonitor = () => api({
     url: '/system-monitor',
     method: 'get'
 })
+
+// 接口调用统计
+export const requestApiStats = () => api({
+    url: '/system-monitor/api-stats',
+    method: 'get'
+})
+
+// ============ 评论管理（仅管理员） ============
+
+export const requestCommentManageList = (params) => api({
+    url: '/comment/manage/list',
+    method: 'get',
+    params
+})
+
+export const requestCommentManageUpdate = (data) => api({
+    url: '/comment/manage/update',
+    method: 'put',
+    data
+})
+
+export const requestCommentManageDelete = (comment_ids) => api({
+    url: '/comment/manage/delete',
+    method: 'delete',
+    data: { comment_ids }
+})

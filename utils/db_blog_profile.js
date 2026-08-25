@@ -27,17 +27,30 @@ const attachCategoryArrays = (row) => {
  * 返回 null 表示用户不存在。
  *
  * @param {string} username
- * @returns {Promise<object|null>} { id, username, avatar, bio, name, area, vip, created_at }
+ * @returns {Promise<object|null>} { id, username, avatar, bio, name, area, vip, created_at, socials, featured_articles, github_id }
  */
 const getUserPublicByUsername = async (username) => {
     try {
         const sql = `
-            SELECT id, username, avatar, bio, name, area, vip, created_at
+            SELECT id, username, avatar, bio, name, area, vip, created_at, socials, featured_articles, github_id
             FROM user
             WHERE username = ?
         `
         const [rows] = await pool.query(sql, [username])
-        return rows[0] || null
+        const row = rows[0] || null
+        if (row) {
+            // mysql2 对 JSON 列会自动解析为数组/对象；兼容字符串情况
+            const parseJson = (v) => {
+                if (Array.isArray(v)) return v
+                if (typeof v === 'string' && v) {
+                    try { return JSON.parse(v) } catch (e) { return [] }
+                }
+                return []
+            }
+            row.socials = parseJson(row.socials)
+            row.featured_articles = parseJson(row.featured_articles)
+        }
+        return row
     } catch (error) {
         console.error('查询用户公开信息错误:', error)
         throw error
@@ -45,28 +58,76 @@ const getUserPublicByUsername = async (username) => {
 }
 
 /**
- * 查某用户名下已发布（status=1）的文章列表（分页 + total，按 created_at 倒序）。
+ * 按文章 id 数组查已发布文章（保持传入顺序），用于主页精选文章
+ * @param {number[]} ids
+ * @returns {Promise<object[]>}
+ */
+const getArticlesByIds = async (ids) => {
+    if (!Array.isArray(ids) || !ids.length) return []
+    const unique = [...new Set(ids.map(Number).filter(Boolean))]
+    const placeholders = unique.map(() => '?').join(',')
+    try {
+        const sql = `
+            SELECT a.article_id, a.title, a.content, a.status, a.user AS user_id,
+                   u.username AS author_name, a.created_at, a.updated_at,
+                   GROUP_CONCAT(DISTINCT ac.category_id ORDER BY ac.category_id ASC) AS category_ids,
+                   GROUP_CONCAT(DISTINCT ac.category_name ORDER BY ac.category_id ASC) AS category_names
+            FROM article a
+            JOIN user u ON a.user = u.id
+            LEFT JOIN articleandcategory_middle acm ON acm.article_id = a.article_id
+            LEFT JOIN article_category ac ON ac.category_id = acm.category_id
+            WHERE a.article_id IN (${placeholders}) AND a.status = 1
+            GROUP BY a.article_id, a.title, a.content, a.status, a.user, u.username, a.created_at, a.updated_at
+        `
+        const [rows] = await pool.query(sql, unique)
+        const map = {}
+        rows.forEach((r) => { map[r.article_id] = attachCategoryArrays(r) })
+        // 按传入 id 顺序返回
+        return unique.map((id) => map[id]).filter(Boolean)
+    } catch (error) {
+        console.error('按 id 查询文章错误:', error)
+        throw error
+    }
+}
+
+/**
+ * 查某用户名下已发布（status=1）的文章列表（分页 + total）。
+ * 支持 keyword（标题模糊）、category_id（分类筛选）、sort（desc 最新 / asc 最早）。
  *
  * @param {string} username
  * @param {number} [page=1]
  * @param {number} [pageSize=10]
+ * @param {Object} [opts] { keyword, category_id, sort }
  * @returns {Promise<{list: object[], total: number, page: number, pageSize: number}>}
  */
-const getArticlesByUsername = async (username, page = 1, pageSize = 10) => {
+const getArticlesByUsername = async (username, page = 1, pageSize = 10, { keyword, category_id, sort } = {}) => {
     page = parseInt(page, 10) || 1
     pageSize = parseInt(pageSize, 10) || 10
     if (page < 1) page = 1
     if (pageSize < 1) pageSize = 10
     const offset = (page - 1) * pageSize
 
+    const where = ['u.username = ?', 'a.status = 1']
+    const params = [username]
+    if (keyword) {
+        where.push('a.title LIKE ?')
+        params.push(`%${keyword}%`)
+    }
+    if (category_id) {
+        where.push('EXISTS (SELECT 1 FROM articleandcategory_middle acm2 WHERE acm2.article_id = a.article_id AND acm2.category_id = ?)')
+        params.push(category_id)
+    }
+    const whereSql = 'WHERE ' + where.join(' AND ')
+    const orderBy = sort === 'asc' ? 'a.created_at ASC' : 'a.created_at DESC'
+
     try {
         const countSql = `
             SELECT COUNT(*) AS total
             FROM article a
             JOIN user u ON a.user = u.id
-            WHERE u.username = ? AND a.status = 1
+            ${whereSql}
         `
-        const [countRows] = await pool.query(countSql, [username])
+        const [countRows] = await pool.query(countSql, params)
         const total = countRows[0].total
 
         const listSql = `
@@ -78,12 +139,12 @@ const getArticlesByUsername = async (username, page = 1, pageSize = 10) => {
             JOIN user u ON a.user = u.id
             LEFT JOIN articleandcategory_middle acm ON acm.article_id = a.article_id
             LEFT JOIN article_category ac ON ac.category_id = acm.category_id
-            WHERE u.username = ? AND a.status = 1
+            ${whereSql}
             GROUP BY a.article_id, a.title, a.content, a.status, a.user, u.username, a.created_at, a.updated_at
-            ORDER BY a.created_at DESC
+            ORDER BY ${orderBy}
             LIMIT ? OFFSET ?
         `
-        const [rows] = await pool.query(listSql, [username, pageSize, offset])
+        const [rows] = await pool.query(listSql, [...params, pageSize, offset])
         const list = rows.map(attachCategoryArrays)
         return { list, total, page, pageSize }
     } catch (error) {
@@ -132,4 +193,5 @@ module.exports = {
     getUserPublicByUsername,
     getArticlesByUsername,
     getUserList,
+    getArticlesByIds,
 }

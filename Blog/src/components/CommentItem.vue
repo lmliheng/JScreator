@@ -7,6 +7,8 @@ const props = defineProps({
   isLoggedIn: { type: Boolean, default: false },
   // 匿名时回复框默认继承的昵称（来自顶层评论表单）
   nicknameHint: { type: String, default: '' },
+  // 父评论显示名（子评论用于显示"回复 @xxx"）
+  parentName: { type: String, default: '' },
   // 提交评论的异步函数，返回 true 表示成功
   submit: { type: Function, required: true },
 })
@@ -57,6 +59,8 @@ async function submitReply() {
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 text-sm">
           <span class="font-medium text-ink">{{ comment.nickname || '匿名' }}</span>
+          <span v-if="parentName" class="text-xs text-faint">回复 @{{ parentName }}</span>
+          <span v-if="comment.is_author" class="author-tag">作者</span>
           <span v-if="isAnonymous" class="tag">匿名</span>
           <time class="text-xs text-faint">{{ formatDate(comment.created_at) }}</time>
         </div>
@@ -88,24 +92,25 @@ async function submitReply() {
             </button>
           </div>
         </div>
-
-        <!-- 子评论（递归渲染，可多层嵌套） -->
-        <div v-if="comment.children && comment.children.length" class="mt-3 space-y-3 border-l border-line pl-4">
-          <CommentItem
-            v-for="child in comment.children"
-            :key="child.comment_id"
-            :comment="child"
-            :is-logged-in="isLoggedIn"
-            :nickname-hint="nicknameHint"
-            :submit="submit"
-          />
-        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* 作者徽标 */
+.author-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-tag);
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  background-color: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
 .primary-btn-sm {
   display: inline-flex;
   align-items: center;

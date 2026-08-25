@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { listComments, addComment } from '@/api/comment'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
@@ -13,24 +13,54 @@ const auth = useAuthStore()
 const toast = useToastStore()
 
 const comments = ref([])
-const loading = ref(true)
+const loading = ref(false)
+const page = ref(1)
+const pageSize = 20
+const total = ref(0)
 
 const nickname = ref('')
 const content = ref('')
 const submitting = ref(false)
 
-async function load() {
+const hasMore = computed(() => comments.value.length < total.value)
+
+// 树 → 扁平列表：每条评论独立左对齐，子评论带 parent_name 显示"回复 @xxx"
+const flatComments = computed(() => {
+  const out = []
+  const walk = (nodes, parentName) => {
+    for (const n of nodes) {
+      const { children, ...rest } = n
+      rest.parent_name = parentName || ''
+      out.push(rest)
+      if (children && children.length) walk(children, n.nickname || '匿名')
+    }
+  }
+  walk(comments.value, '')
+  return out
+})
+
+async function load(reset = false) {
+  if (reset) {
+    page.value = 1
+    comments.value = []
+  }
   loading.value = true
   try {
-    const data = await listComments(props.articleId)
-    // 后端返回 data = { list: [顶层评论] }；兼容纯数组兜底
-    comments.value = (data && (data.list || (Array.isArray(data) ? data : []))) || []
+    const data = await listComments(props.articleId, { page: page.value, pageSize: pageSize.value })
+    const list = (data && data.list) || []
+    total.value = Number(data && data.total) || 0
+    comments.value = reset ? list : [...comments.value, ...list]
   } catch (e) {
-    comments.value = []
+    if (reset) comments.value = []
     toast.error(e.message || '评论加载失败')
   } finally {
     loading.value = false
   }
+}
+
+function loadMore() {
+  page.value += 1
+  load()
 }
 
 // 供顶层表单与楼中楼回复共用，返回是否成功
@@ -54,7 +84,7 @@ async function submitComment(payload) {
       nickname: auth.isLoggedIn ? undefined : (payload.nickname || '').trim(),
     })
     toast.success('评论成功')
-    await load()
+    await load(true)
     return true
   } catch (e) {
     toast.error(e.message || '评论失败')
@@ -76,7 +106,7 @@ function submitTop() {
   })
 }
 
-onMounted(load)
+onMounted(() => load(true))
 </script>
 
 <template>
@@ -115,13 +145,21 @@ onMounted(load)
       <p v-else-if="!comments.length" class="text-sm text-faint">还没有评论，来抢沙发～</p>
       <div v-else class="space-y-5">
         <CommentItem
-          v-for="c in comments"
+          v-for="c in flatComments"
           :key="c.comment_id"
           :comment="c"
+          :parent-name="c.parent_name"
           :is-logged-in="auth.isLoggedIn"
           :nickname-hint="nickname"
           :submit="submitComment"
         />
+        <button
+          v-if="hasMore && !loading"
+          class="mt-4 w-full rounded-tag border border-line py-2 text-sm text-muted transition-colors hover:border-accent hover:text-accent"
+          @click="loadMore"
+        >
+          加载更多评论（还剩 {{ total - comments.length }} 条）
+        </button>
       </div>
     </div>
   </section>

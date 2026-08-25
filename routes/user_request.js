@@ -1,6 +1,7 @@
 const express = require('express')
 const {
     getUserInfoByToken,
+    getUserStats,
     user_updatePassword,
     user_getAll,
     user_getAllByPage,
@@ -17,6 +18,7 @@ const {
 } = require('../utils/db_curd')
 const { tokenValidator } = require('../utils/token_creator')
 const { ToHash } = require('../utils/crypto_password')
+const { pool } = require('../utils/connect_db')
 
 const router = express.Router()
 
@@ -102,6 +104,16 @@ router.get('/sys/profile', async (req, res) => {
         delete user_detail.permission_name
         delete user_detail.permission_id
 
+        // 统计：已发布文章数、评论数（个人中心展示）
+        try {
+            const stats = await getUserStats(user_detail.id)
+            user_detail.article_count = stats.article_count
+            user_detail.comment_count = stats.comment_count
+        } catch (e) {
+            user_detail.article_count = 0
+            user_detail.comment_count = 0
+        }
+
         res.json({
             code: 200,
             success: true,
@@ -122,9 +134,9 @@ router.get('/sys/profile', async (req, res) => {
     }
 })
 
-// 更新用户基本信息（本人，id/username/email）
+// 更新用户基本信息（本人，id/username/email + 社交/精选文章）
 router.put('/userInfo', async (req, res) => {
-    const { id, username, email, bio, vip, checkinDay, name, area, avatar } = req.body
+    const { id, username, email, bio, vip, checkinDay, name, area, avatar, socials, featured_articles } = req.body
     if (!id) {
         return res.status(400).json({
             code: 400,
@@ -133,7 +145,7 @@ router.put('/userInfo', async (req, res) => {
         })
     }
     try {
-        await user_updateProfile(id, { username, email, bio, vip, checkinDay, name, area, avatar })
+        await user_updateProfile(id, { username, email, bio, vip, checkinDay, name, area, avatar, socials, featured_articles })
         res.json({
             code: 200,
             success: true,
@@ -146,6 +158,19 @@ router.put('/userInfo', async (req, res) => {
             success: false,
             message: '服务器内部错误'
         })
+    }
+})
+
+// 解除 GitHub 绑定（登录用户）
+router.post('/userInfo/unbind-github', async (req, res) => {
+    const user_id = await requireLogin(req, res)
+    if (user_id === null) return
+    try {
+        await pool.query('UPDATE user SET github_id = NULL WHERE id = ?', [user_id])
+        res.json({ code: 200, success: true, message: '已解除 GitHub 绑定' })
+    } catch (error) {
+        console.error('解除 GitHub 绑定错误:', error)
+        res.status(500).json({ code: 500, success: false, message: '服务器内部错误' })
     }
 })
 

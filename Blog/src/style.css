@@ -178,8 +178,11 @@ body {
 .prose {
   font-size: 1rem;
   line-height: 1.75;
-  color: var(--color-body);
+  color: #3f3f46; /* 正文明显加深（决策：亮色 #3f3f46） */
   overflow-wrap: break-word;
+}
+.dark .prose {
+  color: rgba(255, 255, 255, 0.85); /* 暗色模式正文提亮 */
 }
 @media (min-width: 768px) {
   .prose {
@@ -250,6 +253,89 @@ body {
   color: inherit;
   padding: 0;
   font-size: inherit;
+}
+
+/* ============================================================
+ * mac 风格代码块（markdown.js highlight 生成 .code-block 结构）
+ * ============================================================ */
+.code-block {
+  margin: 1.25em 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #0d1117; /* github-dark 背景 */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.code-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.code-dots {
+  display: inline-flex;
+  gap: 6px;
+}
+.code-dots i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.code-dots .dot-r { background-color: #ff5f57; }
+.code-dots .dot-y { background-color: #febc2e; }
+.code-dots .dot-g { background-color: #28c840; }
+.code-lang {
+  flex: 1;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: lowercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.code-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+.code-actions button {
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 5px 10px;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.12);
+  transition: background-color 0.2s ease;
+}
+.code-actions button:hover {
+  background-color: rgba(255, 255, 255, 0.24);
+}
+.code-block pre {
+  margin: 0 !important;
+  padding: 14px 16px;
+  overflow-x: auto;
+  background-color: transparent !important;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.code-block pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+/* 代码文字整体提亮（github-dark 偏暗） */
+.code-block .hljs {
+  background-color: transparent;
+  color: #e6edf3;
+}
+/* 折叠状态 */
+.code-block.folded pre {
+  display: none;
 }
 
 .prose img {

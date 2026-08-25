@@ -130,4 +130,21 @@ router.get('/system-monitor', async (req, res) => {
     }
 })
 
+// 接口调用统计（仅管理员）
+router.get('/system-monitor/api-stats', async (req, res) => {
+    const decoded = resolveUser(req, res)
+    if (!decoded) return
+    try {
+        const [rows] = await pool.query('SELECT role_id FROM user WHERE id = ?', [decoded.id])
+        if (!rows.length || rows[0].role_id !== 1) {
+            return res.status(403).json({ code: 403, success: false, message: '权限不足，仅管理员可查看系统监控' })
+        }
+    } catch (error) {
+        console.error('接口统计-查询角色错误:', error)
+        return res.status(500).json({ code: 500, success: false, message: '服务器内部错误' })
+    }
+    const { getApiStats } = require('../utils/api_monitor')
+    res.json({ code: 200, success: true, message: '获取接口统计成功', data: { list: getApiStats() } })
+})
+
 module.exports = router

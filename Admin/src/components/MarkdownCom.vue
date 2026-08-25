@@ -4,6 +4,8 @@
     import Editor from '@toast-ui/editor';
     import '@toast-ui/editor/dist/toastui-editor.css';
     import '@toast-ui/editor/dist/i18n/zh-cn';
+    import { api } from '@/composables/useAxiosConfig'
+    import { ElMessage } from 'element-plus'
 
     const props = defineProps({
         // markdown 内容（v-model）
@@ -33,7 +35,26 @@
             initialEditType: 'markdown',
             previewStyle: 'vertical',
             placeholder: props.placeholder,
-            initialValue: props.modelValue || ''
+            initialValue: props.modelValue || '',
+            hooks: {
+                // 工具栏/拖拽/粘贴图片：上传到阿里 OSS 后把 URL 插入 markdown
+                addImageBlobHook: async (blob, callback) => {
+                    const formData = new FormData()
+                    formData.append('image', blob)
+                    try {
+                        const res = await api.post('/upload/image', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' },
+                        })
+                        if (res && res.data && res.data.url) {
+                            callback(res.data.url, blob.name || 'image')
+                        } else {
+                            ElMessage.error((res && res.message) || '图片上传失败')
+                        }
+                    } catch (e) {
+                        ElMessage.error(e?.response?.data?.message || '图片上传失败')
+                    }
+                },
+            },
         })
         // 用户编辑时同步 markdown 内容给父组件
         editor.on('change', () => {

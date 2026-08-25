@@ -153,6 +153,9 @@ onMounted(() => {
     height: 100vh;
     overflow: hidden;
 }
+.common-layout :deep(.el-container) {
+    height: 100%;
+}
 .common-layout :deep(.el-main) {
     overflow-y: auto;
 }

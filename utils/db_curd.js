@@ -38,6 +38,20 @@ const getUserInfoByToken = async (token) => {
     }
 }
 
+/**
+ * 用户统计：已发布文章数、评论数（用于个人中心展示）
+ */
+const getUserStats = async (user_id) => {
+    try {
+        const [artRows] = await pool.query('SELECT COUNT(*) AS c FROM article WHERE `user` = ? AND status = 1', [user_id])
+        const [cmtRows] = await pool.query('SELECT COUNT(*) AS c FROM comment WHERE user_id = ?', [user_id])
+        return { article_count: artRows[0].c, comment_count: cmtRows[0].c }
+    } catch (error) {
+        console.error('查询用户统计错误:', error)
+        throw error
+    }
+}
+
 
 
 // 更新用户信息（对象字段版）：动态构造 SET 子句，仅更新传入的非 undefined 字段，未传字段不动
@@ -45,13 +59,17 @@ const getUserInfoByToken = async (token) => {
 // 没有任何字段需要更新时返回 false
 const user_updateProfile = async (id, fields = {}) => {
     try {
-        const allowedFields = ['username', 'email', 'role_id', 'bio', 'vip', 'checkinDay', 'name', 'area', 'avatar']
+        const allowedFields = ['username', 'email', 'role_id', 'bio', 'vip', 'checkinDay', 'name', 'area', 'avatar', 'socials', 'featured_articles']
         const setClauses = []
         const params = []
         for (const key of allowedFields) {
             if (fields[key] !== undefined) {
+                let val = fields[key]
+                if (key === 'socials' || key === 'featured_articles') {
+                    val = JSON.stringify(Array.isArray(val) ? val : [])
+                }
                 setClauses.push(`${key} = ?`)
-                params.push(fields[key])
+                params.push(val)
             }
         }
         if (setClauses.length === 0) {
@@ -487,7 +505,13 @@ const article_category_getAllByArticleId = async (article_id) => {
 // 查询所有用户分类(admin)
 const article_category_getAll = async () => {
     try {
-        const sql = 'SELECT * FROM article_category'
+        const sql = `
+            SELECT c.category_id, c.category_name, c.created_at, c.updated_at, c.user,
+                   COALESCE(NULLIF(u.name, ''), u.username) AS author_name
+            FROM article_category c
+            LEFT JOIN user u ON u.id = c.user
+            ORDER BY c.category_id ASC
+        `
         const [rows] = await pool.query(sql)
         return rows
     } catch (error) {
@@ -777,6 +801,7 @@ module.exports = {
 
     // 用户相关
     getUserInfoByToken, // 获取用户信息
+    getUserStats, // 用户统计（文章数/评论数）
     user_update, // 更新用户信息（旧版位置参数，向后兼容）
     user_updateProfile, // 更新用户信息（对象字段版，支持 bio/vip/checkinDay/name/area）
     user_add, // 新增用户

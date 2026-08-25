@@ -1,8 +1,8 @@
 import http from './http'
 
-// 某文章评论列表，返回楼中楼树形结构（children 嵌套）
-export function listComments(articleId) {
-  return http.get(`/comment/list/${articleId}`).then((res) => res.data)
+// 某文章评论列表（顶层分页），返回 { list, total, page, pageSize }，children 为楼中楼树
+export function listComments(articleId, params = {}) {
+  return http.get(`/comment/list/${articleId}`, { params }).then((res) => res.data)
 }
 
 // 发表评论：body { article_id, content, parent_id?, nickname? }

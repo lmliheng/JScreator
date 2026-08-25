@@ -2,7 +2,8 @@ const express = require('express')
 const router = express.Router()
 const axios = require('axios')
 const { user_getByGithubId, user_registerGithub } = require('../utils/db_curd')
-const { tokenCreator } = require('../utils/token_creator')
+const { tokenCreator, tokenValidator } = require('../utils/token_creator')
+const { pool } = require('../utils/connect_db')
 
 const CLIENT_ID = process.env.GITHUB_CLIENT_ID
 const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET
@@ -26,10 +27,35 @@ router.get('/auth/github', (req, res) => {
     res.redirect(url)
 })
 
+// 1b. 绑定 GitHub 到当前登录账号（需已登录，token 通过 query 传入；回调后写入 github_id）
+router.get('/auth/github/bind', (req, res) => {
+    const redirect = req.query.redirect || (FRONTEND_URL + '/login')
+    const token = req.query.token || ''
+    const state = JSON.stringify({ mode: 'bind', token, redirect })
+    const url =
+        'https://github.com/login/oauth/authorize' +
+        '?client_id=' + encodeURIComponent(CLIENT_ID) +
+        '&redirect_uri=' + encodeURIComponent(CALLBACK_URL) +
+        '&scope=' + encodeURIComponent('read:user user:email') +
+        '&state=' + encodeURIComponent(state)
+    res.redirect(url)
+})
+
 // 2. 授权回调
 router.get('/auth/github/callback', async (req, res) => {
     const { code, state } = req.query
-    const frontend = state || (FRONTEND_URL + '/login')
+    // state 可能是绑定模式（JSON {mode:'bind',token,redirect}）或登录模式（redirect URL）
+    let bindMode = null
+    let frontend = state || (FRONTEND_URL + '/login')
+    try {
+        const parsed = JSON.parse(state)
+        if (parsed && parsed.mode === 'bind') {
+            bindMode = parsed
+            frontend = parsed.redirect || (FRONTEND_URL + '/login')
+        }
+    } catch (e) {
+        /* 非 JSON：登录模式 */
+    }
     const sep = frontend.includes('?') ? '&' : '?'
 
     if (!code) {
@@ -57,6 +83,20 @@ router.get('/auth/github/callback', async (req, res) => {
             headers: { Authorization: 'Bearer ' + accessToken, 'User-Agent': 'jscreator' },
         })
         const gh = userRes.data // { id, login, name, email, avatar_url }
+
+        // ===== 绑定模式：把 github_id 写入当前登录账号 =====
+        if (bindMode) {
+            const decoded = tokenValidator(bindMode.token)
+            if (!decoded || typeof decoded !== 'object' || decoded.id === undefined) {
+                return res.redirect(frontend + sep + 'error=github_bind_login_expired')
+            }
+            const existing = await user_getByGithubId(gh.id)
+            if (existing && Number(existing.id) !== Number(decoded.id)) {
+                return res.redirect(frontend + sep + 'error=github_bind_conflict')
+            }
+            await pool.query('UPDATE user SET github_id = ? WHERE id = ?', [gh.id, decoded.id])
+            return res.redirect(frontend + sep + 'success=github_bind_ok')
+        }
 
         // 查已绑定用户，否则自动注册
         let user = await user_getByGithubId(gh.id)

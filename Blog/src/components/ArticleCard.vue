@@ -22,6 +22,8 @@ import { excerpt, formatDate } from '@/utils/format'
  */
 const props = defineProps({
   article: { type: Object, default: () => ({}) },
+  // 紧凑模式：内边距更小、摘要限 2 行、隐藏次级标签（供个人主页 3 列使用）
+  compact: { type: Boolean, default: false },
 })
 
 const title = computed(() => props.article.title || '无标题')
@@ -68,24 +70,28 @@ const author = computed(() => props.article.author_name || '')
       />
     </RouterLink>
 
-    <div class="flex flex-1 flex-col p-5 md:p-[25px] xl:p-[30px]">
+    <div class="flex flex-1 flex-col" :class="compact ? 'p-4' : 'p-5 md:p-[25px] xl:p-[30px]'">
       <!-- 分类标签 -->
-      <div v-if="categories.length" class="mb-3 flex flex-wrap gap-2">
+      <div v-if="categories.length" class="flex flex-wrap gap-2" :class="compact ? 'mb-2' : 'mb-3'">
         <span v-for="c in categories" :key="c" class="tag">{{ c }}</span>
       </div>
 
       <!-- 标题 -->
-      <h2 class="text-lg font-bold leading-snug md:text-xl">
+      <h2 :class="compact ? 'text-base font-bold leading-snug' : 'text-lg font-bold leading-snug md:text-xl'">
         <RouterLink :to="link" class="text-ink transition-colors group-hover:text-accent">
           {{ title }}
         </RouterLink>
       </h2>
 
       <!-- 摘要 -->
-      <p v-if="summary" class="mt-2 flex-1 text-sm leading-relaxed text-muted">{{ summary }}</p>
+      <p
+        v-if="summary"
+        class="mt-2 flex-1 text-sm leading-relaxed text-muted"
+        :class="compact ? 'line-clamp-2' : ''"
+      >{{ summary }}</p>
 
-      <!-- 次级标签（可选） -->
-      <div v-if="tags.length" class="mt-3 flex flex-wrap gap-1.5">
+      <!-- 次级标签（紧凑模式隐藏） -->
+      <div v-if="tags.length && !compact" class="mt-3 flex flex-wrap gap-1.5">
         <span
           v-for="t in tags"
           :key="t"
@@ -96,7 +102,7 @@ const author = computed(() => props.article.author_name || '')
       </div>
 
       <!-- 元信息 -->
-      <div class="mt-4 flex items-center justify-between gap-2 border-t border-line pt-3 text-xs text-faint">
+      <div class="mt-4 flex items-center justify-between gap-2 border-t border-line pt-3 text-xs text-faint" :class="compact ? 'mt-3 pt-2' : ''">
         <span class="flex min-w-0 items-center gap-2">
           <time class="shrink-0">{{ date }}</time>
           <span v-if="readingTime" class="shrink-0">· {{ readingTime }} 分钟阅读</span>

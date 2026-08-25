@@ -1,10 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { requestSystemMonitor } from '@/composables/useRequest'
+import { requestSystemMonitor, requestApiStats } from '@/composables/useRequest'
 import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
 const data = ref(null)
+const apiStats = ref([])
 let timer = null
 
 const formatBytes = (bytes) => {
@@ -28,6 +29,14 @@ const formatUptime = (seconds) => {
 }
 
 const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '-')
+
+// 接口路径拆分：path 形如 "GET /article/list"
+const methodOf = (p) => String(p || '').split(' ')[0] || ''
+const pathOf = (p) => String(p || '').split(' ').slice(1).join(' ') || String(p || '')
+const methodTag = (p) => {
+    const map = { GET: 'success', POST: 'primary', PUT: 'warning', DELETE: 'danger', PATCH: 'warning' }
+    return map[methodOf(p)] || 'info'
+}
 
 const loadText = computed(() => {
     const la = data.value?.cpu?.loadavg
@@ -55,10 +64,25 @@ const loadData = async () => {
     }
 }
 
+const loadApiStats = async () => {
+    try {
+        const res = await requestApiStats()
+        if (res.code === 200 && res.data) {
+            apiStats.value = res.data.list || []
+        }
+    } catch (e) {
+        // 静默失败，不阻塞主监控
+    }
+}
+
 onMounted(() => {
     loading.value = true
     loadData()
-    timer = setInterval(loadData, 5000)
+    loadApiStats()
+    timer = setInterval(() => {
+        loadData()
+        loadApiStats()
+    }, 5000)
 })
 
 onBeforeUnmount(() => {
@@ -152,6 +176,40 @@ onBeforeUnmount(() => {
             </el-col>
         </el-row>
 
+        <!-- 接口监控 -->
+        <el-card shadow="never" header="接口调用统计" class="mt16">
+            <el-table :data="apiStats" border stripe size="small" max-height="420">
+                <el-table-column type="index" label="序号" width="70" align="center" />
+                <el-table-column align="left" label="接口" min-width="280">
+                    <template #default="scope">
+                        <el-tag :type="methodTag(scope.row.path)" size="small" style="margin-right: 6px">
+                            {{ methodOf(scope.row.path) }}
+                        </el-tag>
+                        <span>{{ pathOf(scope.row.path) }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" prop="count" label="调用次数" width="100" sortable />
+                <el-table-column align="center" label="平均耗时" width="110" sortable>
+                    <template #default="scope">
+                        {{ scope.row.count ? scope.row.avgTime + ' ms' : '-' }}
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" label="错误数" width="100" sortable>
+                    <template #default="scope">
+                        <el-tag :type="scope.row.errorCount > 0 ? 'danger' : 'success'" size="small">
+                            {{ scope.row.errorCount }}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" label="最后调用" width="170">
+                    <template #default="scope">
+                        {{ scope.row.lastAt ? formatTime(new Date(scope.row.lastAt).toISOString()) : '-' }}
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div v-if="!apiStats.length" class="empty-tip">暂无接口调用记录（后端启动后开始统计）</div>
+        </el-card>
+
         <div class="footer-note">每 5 秒自动刷新 · 上次更新：{{ data?.timestamp ? formatTime(data.timestamp) : '-' }}</div>
     </div>
 </template>
@@ -159,6 +217,17 @@ onBeforeUnmount(() => {
 <style scoped>
 .mb16 {
     margin-bottom: 16px;
+}
+
+.mt16 {
+    margin-top: 16px;
+}
+
+.empty-tip {
+    padding: 24px 0;
+    text-align: center;
+    color: #909399;
+    font-size: 13px;
 }
 
 .metric {

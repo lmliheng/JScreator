@@ -21,8 +21,8 @@ const authorStore = useAuthorStore()
 
 const open = ref(false)
 
-// 后台入口地址：本地开发指向 8085，生产部署在同域 /admin/ 下
-const adminUrl = import.meta.env.DEV ? 'http://localhost:8085/' : '/admin/'
+// 后台入口地址：本地开发指向 8085，生产部署在同域 /panel/ 下
+const adminUrl = import.meta.env.DEV ? 'http://localhost:8085/' : '/panel/'
 
 // 侧边栏展示的信息优先级：当前浏览的作者 > 登录用户 > props 默认（JScreator）
 const displayName = computed(

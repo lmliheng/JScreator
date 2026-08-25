@@ -224,7 +224,7 @@ router.get('/article/category/list', async (req, res) => {
     }
 })
 
-// 新增分类（登录，作者自己的分类）
+// 新增分类（仅 admin/editor 可建，普通用户只能用现有分类）
 router.post('/article/category/add', async (req, res) => {
     const user = getLoginUser(req)
     if (!user) {
@@ -235,6 +235,9 @@ router.post('/article/category/add', async (req, res) => {
         return res.status(400).json({ code: 400, success: false, message: '分类名称不能为空' })
     }
     try {
+        if (!(await isAdminOrEditor(user.id))) {
+            return res.status(403).json({ code: 403, success: false, message: '权限不足，仅管理员或编辑可创建分类' })
+        }
         await article_category_add(category_name, user.id)
         res.json({ code: 200, success: true, message: '添加成功', data: { category_name } })
     } catch (error) {

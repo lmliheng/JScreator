@@ -25,6 +25,9 @@ const roleId = computed(() => {
 // 是否超级管理员（role_id = 1）
 const isAdmin = computed(() => roleId.value === 1)
 
+// 是否管理员或编辑（role_id 1 / 3）
+const isAdminOrEditor = computed(() => roleId.value === 1 || roleId.value === 3)
+
 console.log(props.UserInfo)
 import {
   User,
