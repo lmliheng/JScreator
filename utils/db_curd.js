@@ -17,7 +17,7 @@ const getUserInfoByToken = async (token) => {
     try {
         const sql =
             `
-        SELECT u.username, u.email, u.id, u.avatar, u.created_at, r.role_name, r.role_id, p.permission_name, p.permission_id
+        SELECT u.username, u.email, u.id, u.avatar, u.created_at, u.name, u.vip, u.area, u.bio, u.checkinDay, r.role_name, r.role_id, p.permission_name, p.permission_id
         FROM user u
         JOIN role r ON u.role_id = r.role_id
         JOIN roleandpermission_middle rp ON rp.role_id = r.role_id
@@ -40,15 +40,41 @@ const getUserInfoByToken = async (token) => {
 
 
 
-const user_update = async (id, username, email) => {
+// 更新用户信息（对象字段版）：动态构造 SET 子句，仅更新传入的非 undefined 字段，未传字段不动
+// fields 支持：username, email, role_id, bio, vip, checkinDay, name, area
+// 没有任何字段需要更新时返回 false
+const user_updateProfile = async (id, fields = {}) => {
     try {
-        const sql = 'UPDATE user SET username = ?, email = ? WHERE id = ?'
-        await pool.query(sql, [username, email, id])
+        const allowedFields = ['username', 'email', 'role_id', 'bio', 'vip', 'checkinDay', 'name', 'area', 'avatar']
+        const setClauses = []
+        const params = []
+        for (const key of allowedFields) {
+            if (fields[key] !== undefined) {
+                setClauses.push(`${key} = ?`)
+                params.push(fields[key])
+            }
+        }
+        if (setClauses.length === 0) {
+            return false
+        }
+        const sql = `UPDATE user SET ${setClauses.join(', ')} WHERE id = ?`
+        params.push(id)
+        await pool.query(sql, params)
         return true
     } catch (error) {
         console.error('更新用户信息错误:', error)
         throw error
     }
+}
+
+// 向后兼容的旧版签名：user_update(id, username, email, role_id)
+// 内部转成对象字段版调用，role_id 为 null/undefined 时不更新 role_id（与旧行为一致）
+const user_update = async (id, username, email, role_id) => {
+    const fields = { username, email }
+    if (role_id !== undefined && role_id !== null) {
+        fields.role_id = role_id
+    }
+    return user_updateProfile(id, fields)
 }
 
 // 查询所有用户信息
@@ -63,6 +89,128 @@ const user_getAll = async () => {
         return rows
     } catch (error) {
         console.error('查询所有用户信息错误:', error)
+        throw error
+    }
+}
+
+// 分页查询所有用户信息（真分页，LIMIT/OFFSET 参数化）
+const user_getAllByPage = async (page = 1, pageSize = 10, keyword = '') => {
+    try {
+        page = parseInt(page, 10) || 1
+        pageSize = parseInt(pageSize, 10) || 10
+        if (page < 1) page = 1
+        if (pageSize < 1) pageSize = 10
+        const offset = (page - 1) * pageSize
+
+        const where = []
+        const params = []
+        if (keyword) {
+            const kw = `%${keyword}%`
+            where.push('(u.username LIKE ? OR u.email LIKE ? OR u.name LIKE ?)')
+            params.push(kw, kw, kw)
+        }
+        const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : ''
+
+        const listSql =
+            `
+        SELECT u.id, u.username, u.email, u.avatar, u.created_at, u.updated_at, u.name, u.area, u.bio, u.vip, u.checkinDay, r.role_id, r.role_name
+        FROM user u JOIN role r ON u.role_id = r.role_id
+        ${whereSql}
+        ORDER BY u.id DESC
+        LIMIT ? OFFSET ?
+        `
+        const countSql = `SELECT COUNT(*) AS total FROM user u JOIN role r ON u.role_id = r.role_id ${whereSql}`
+        const [rows] = await pool.query(listSql, [...params, pageSize, offset])
+        const [countRows] = await pool.query(countSql, params)
+        return {
+            list: rows,
+            total: countRows[0].total,
+            page,
+            pageSize
+        }
+    } catch (error) {
+        console.error('分页查询所有用户信息错误:', error)
+        throw error
+    }
+}
+
+// 新增用户（password 已加密；id 使用表自增，返回新用户 id）
+const user_add = async (username, email, password, role_id) => {
+    try {
+        let sql, params
+        if (role_id !== undefined && role_id !== null && role_id !== '') {
+            sql = 'INSERT INTO user (username, email, password, role_id) VALUES (?, ?, ?, ?)'
+            params = [username, email, password, role_id]
+        } else {
+            sql = 'INSERT INTO user (username, email, password) VALUES (?, ?, ?)'
+            params = [username, email, password]
+        }
+        const [result] = await pool.query(sql, params)
+        return result.insertId
+    } catch (error) {
+        console.error('新增用户错误:', error)
+        throw error
+    }
+}
+
+// 删除用户
+const user_delete = async (id) => {
+    try {
+        const sql = 'DELETE FROM user WHERE id = ?'
+        await pool.query(sql, [id])
+        return true
+    } catch (error) {
+        console.error('删除用户错误:', error)
+        throw error
+    }
+}
+
+// 批量删除用户（返回删除行数）
+const user_deleteBatch = async (ids) => {
+    try {
+        const placeholders = ids.map(() => '?').join(',')
+        const sql = `DELETE FROM user WHERE id IN (${placeholders})`
+        const [result] = await pool.query(sql, ids)
+        return result.affectedRows
+    } catch (error) {
+        console.error('批量删除用户错误:', error)
+        throw error
+    }
+}
+
+// 按 id 查询单个用户（不含密码）
+const user_getById = async (id) => {
+    try {
+        const sql =
+            `
+        SELECT u.id, u.username, u.email, u.avatar, u.bio, u.vip, u.checkinDay, u.name, u.area,
+               u.created_at, u.updated_at, u.role_id, r.role_name
+        FROM user u LEFT JOIN role r ON u.role_id = r.role_id
+        WHERE u.id = ?
+        `
+        const [rows] = await pool.query(sql, [id])
+        return rows[0] || null
+    } catch (error) {
+        console.error('查询单个用户错误:', error)
+        throw error
+    }
+}
+
+// 按 id 查询用户密码哈希（仅返回哈希值，不返回明文；存的就是 SHA256 哈希）
+const user_getPasswordById = async (id) => {
+    try {
+        const sql = 'SELECT id, username, password FROM user WHERE id = ?'
+        const [rows] = await pool.query(sql, [id])
+        if (rows.length === 0) {
+            return null
+        }
+        return {
+            id: rows[0].id,
+            username: rows[0].username,
+            password_hash: rows[0].password
+        }
+    } catch (error) {
+        console.error('查询用户密码错误:', error)
         throw error
     }
 }
@@ -448,6 +596,41 @@ const role_addPermission = async (role_id, permission_id_list) => {
         throw error
     }
 }
+
+// 设置角色权限（先清空再写入，避免重复）
+const role_setPermission = async (role_id, permission_id_list) => {
+    const conn = await pool.getConnection()
+    try {
+        await conn.beginTransaction()
+        await conn.query('DELETE FROM roleandpermission_middle WHERE role_id = ?', [role_id])
+        for (const permission_id of permission_id_list) {
+            if (permission_id !== undefined && permission_id !== null && permission_id !== '') {
+                await conn.query('INSERT INTO roleandpermission_middle (role_id, permission_id) VALUES (?, ?)', [role_id, permission_id])
+            }
+        }
+        await conn.commit()
+        return true
+    } catch (error) {
+        await conn.rollback()
+        console.error('设置角色权限错误:', error)
+        throw error
+    } finally {
+        conn.release()
+    }
+}
+
+// 查询某角色已有的权限 id 列表
+const role_getPermissionByRoleId = async (role_id) => {
+    try {
+        const sql = 'SELECT permission_id FROM roleandpermission_middle WHERE role_id = ?'
+        const [rows] = await pool.query(sql, [role_id])
+        return rows.map(r => r.permission_id)
+    } catch (error) {
+        console.error('查询角色权限错误:', error)
+        throw error
+    }
+}
+
 // 更新角色名称
 const role_updateName = async (role_id, role_name) => {
     try {
@@ -496,6 +679,18 @@ const permission_getAll = async () => {
     }
 }
 
+// 更新权限名称/描述
+const permission_update = async (permission_id, permission_name, permission_description) => {
+    try {
+        const sql = 'UPDATE permission SET permission_name = ?, permission_description = ? WHERE permission_id = ?'
+        await pool.query(sql, [permission_name, permission_description, permission_id])
+        return true
+    } catch (error) {
+        console.error('更新权限错误:', error)
+        throw error
+    }
+}
+
 
 module.exports = {
 
@@ -526,14 +721,24 @@ module.exports = {
 
     // 用户相关
     getUserInfoByToken, // 获取用户信息
-    user_update, // 更新用户信息
+    user_update, // 更新用户信息（旧版位置参数，向后兼容）
+    user_updateProfile, // 更新用户信息（对象字段版，支持 bio/vip/checkinDay/name/area）
+    user_add, // 新增用户
+    user_delete, // 删除用户
+    user_deleteBatch, // 批量删除用户
+    user_getById, // 按 id 查询单个用户
+    user_getPasswordById, // 按 id 查询用户密码哈希（仅管理员）
     role_getAll, // 查询所有角色
     user_getAll, // 查询所有用户信息
+    user_getAllByPage, // 分页查询所有用户信息
     permission_getAll, // 查询所有权限
+    permission_update, // 更新权限名称/描述
 
 
     // 角色相关
     role_addPermission, // 增加角色权限
+    role_setPermission, // 设置角色权限（清空后写入）
+    role_getPermissionByRoleId, // 查询角色已有权限 id
     role_updateName, // 更新角色名称
     role_add, // 添加角色
     role_delete, // 删除角色

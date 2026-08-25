@@ -4,7 +4,8 @@ const jwt = require('jsonwebtoken')
 const tokenCreator = (user) => {
     const token = jwt.sign(
         {
-            id: user.id
+            id: user.id,
+            role_id: user.role_id
         },
         process.env.JWT_SECRET || 'test',
         {
@@ -32,7 +33,7 @@ const tokenValidator = (token) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test');
         return decoded;
     } catch (error) {
-        return '解析失败'
+        return null;
     }
 }
 

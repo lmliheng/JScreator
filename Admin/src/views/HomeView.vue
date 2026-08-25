@@ -20,6 +20,7 @@ import FullScreen from '@/components/FullScreen.vue'
 import searchCom from '@/components/searchCom.vue'
 import tagView from '@/components/tagView.vue'
 import DriverCom from '@/components/DriverCom.vue'
+import NotificationBell from '@/components/NotificationBell.vue'
 
 import { ElMessage } from 'element-plus'
 import { Fold, Expand } from '@element-plus/icons-vue'
@@ -112,6 +113,8 @@ onMounted(() => {
                 <FullScreen />
               </div>
 
+              <NotificationBell />
+
               <div id="header-i18n">
                 <i18nCom />
               </div>
@@ -146,6 +149,13 @@ onMounted(() => {
 
 
 <style scoped>
+.common-layout {
+    height: 100vh;
+    overflow: hidden;
+}
+.common-layout :deep(.el-main) {
+    overflow-y: auto;
+}
 .fade-enter-active,
 .fade-leave-active {
   transition: all 0.3s ease-in-out;
@@ -191,7 +201,7 @@ onMounted(() => {
 }
 
 #header-right {
-  width: 200px;
+  width: 240px;
   height: 60px;
   display: flex;
   align-items: center;

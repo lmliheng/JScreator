@@ -1,0 +1,69 @@
+const express = require('express')
+const router = express.Router()
+const {
+    getUserPublicByUsername,
+    getArticlesByUsername,
+    getUserList,
+} = require('../utils/db_blog_profile')
+
+/**
+ * 博客个人主页接口（供博客前端 /username 路由使用）
+ *
+ * 1. GET /blog/profile/:username
+ *    一次返回用户公开信息 + 第一页已发布文章，方便个人主页首屏。
+ *    query: page（默认 1）、pageSize（默认 10）
+ *    data = { user: {...}, articles: { list, total, page, pageSize } }
+ *
+ * 2. GET /blog/articles/:username
+ *    只返回该用户的已发布文章分页，供「加载更多 / 翻页」使用，避免重复拉用户信息。
+ *    query: page（默认 1）、pageSize（默认 10）
+ *    data = { list, total, page, pageSize }
+ */
+
+// 博客首页：所有有文章的用户列表（用户主页入口）
+router.get('/blog/users', async (req, res) => {
+    const { page, pageSize } = req.query
+    try {
+        const data = await getUserList(page, pageSize)
+        res.json({ code: 200, success: true, message: '获取成功', data })
+    } catch (error) {
+        console.error('获取用户列表错误:', error)
+        res.status(500).json({ code: 500, success: false, message: '获取用户列表失败' })
+    }
+})
+
+// 博客主页：用户公开信息 + 第一页文章
+router.get('/blog/profile/:username', async (req, res) => {
+    const { username } = req.params
+    const { page, pageSize } = req.query
+    try {
+        const user = await getUserPublicByUsername(username)
+        if (!user) {
+            return res.status(404).json({ code: 404, success: false, message: '用户不存在' })
+        }
+        const articles = await getArticlesByUsername(username, page, pageSize)
+        res.json({ code: 200, success: true, message: '获取成功', data: { user, articles } })
+    } catch (error) {
+        console.error('获取博客主页错误:', error)
+        res.status(500).json({ code: 500, success: false, message: '获取博客主页失败' })
+    }
+})
+
+// 用户已发布文章分页（翻页 / 加载更多）
+router.get('/blog/articles/:username', async (req, res) => {
+    const { username } = req.params
+    const { page, pageSize } = req.query
+    try {
+        const user = await getUserPublicByUsername(username)
+        if (!user) {
+            return res.status(404).json({ code: 404, success: false, message: '用户不存在' })
+        }
+        const data = await getArticlesByUsername(username, page, pageSize)
+        res.json({ code: 200, success: true, message: '获取成功', data })
+    } catch (error) {
+        console.error('获取用户文章列表错误:', error)
+        res.status(500).json({ code: 500, success: false, message: '获取用户文章列表失败' })
+    }
+})
+
+module.exports = router

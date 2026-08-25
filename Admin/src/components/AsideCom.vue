@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 const props = defineProps({
   UserInfo: {
@@ -15,12 +15,23 @@ const props = defineProps({
     default: () => false
   }}
 )
+
+// 当前登录用户的 role_id（来自 /sys/profile 的 user_detail）
+const roleId = computed(() => {
+  const id = props.UserInfo?.user_detail?.role_id
+  return id === undefined || id === null || id === '' ? null : Number(id)
+})
+
+// 是否超级管理员（role_id = 1）
+const isAdmin = computed(() => roleId.value === 1)
+
 console.log(props.UserInfo)
 import {
   User,
   Menu as IconMenu,
   Operation,
   Notebook,
+  Bell,
 } from '@element-plus/icons-vue'
 
 
@@ -48,7 +59,7 @@ onMounted(() => {
       <template #title>{{ $t('user_profile') }}</template>
     </el-menu-item>
 
-    <el-sub-menu index="2">
+    <el-sub-menu index="2" v-if="isAdmin">
       <template #title>
         <el-icon><Operation /></el-icon>
         <span>{{ $t('user') }}</span>
@@ -63,10 +74,18 @@ onMounted(() => {
        <el-icon><Notebook /></el-icon>
         <span>{{ $t('article') }}</span>
       </template>
-        <el-menu-item index="/article/article-rank">{{ $t('article_rank') }}</el-menu-item>
         <el-menu-item index="/article/article-detail">{{ $t('article_detail') }}</el-menu-item>
         <el-menu-item index="/article/article-create">{{ $t('article_create') }}</el-menu-item>
         <el-menu-item index="/article/article-manage">{{ $t('article_manage') }}</el-menu-item>
+    </el-sub-menu>
+
+    <el-sub-menu index="4">
+      <template #title>
+        <el-icon><Bell /></el-icon>
+        <span>{{ $t('notification') }}</span>
+      </template>
+        <el-menu-item index="/notification/notification-center">{{ $t('notification_center') }}</el-menu-item>
+        <el-menu-item v-if="isAdmin" index="/notification/notification-manage">{{ $t('notification_manage') }}</el-menu-item>
     </el-sub-menu>
   </el-menu>
 </template>

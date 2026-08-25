@@ -1,143 +1,86 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { requestUserDetail } from '../../composables/useRequest';
-import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
+import { useRoute, useRouter } from 'vue-router'
+import { requestUserDetail } from '../../composables/useRequest'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
+const router = useRouter()
 const id = ref(route.params.id)
 const loading = ref(false)
-
 const userInfo = ref({})
 
-const printLoading = ref(false)
-const printObj = {
-  id: "user-info",
-  popTitle: 'good print',
-  extraCss: "https://cdn.bootcdn.net/ajax/libs/animate.css/4.1.1/animate.compat.css, https://cdn.bootcdn.net/ajax/libs/hover.css/2.3.1/css/hover-min.css",
-  extraHead: '<meta http-equiv="Content-Language"content="zh-cn"/>',
-  beforeOpenCallback(vue) {
-    vue.printLoading = true
-    console.log('打开之前')
-  },
-  openCallback(vue) {
-    vue.printLoading = false
-    console.log('执行了打印')
-  },
-  closeCallback(vue) {
-    console.log('关闭了打印工具')
-  }
-}
+const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
 
 const getUserDetail = async () => {
-  try {
-    loading.value = true;
-    const res = await requestUserDetail(id.value);
-    userInfo.value = res.data;
-    console.log(userInfo.value);
-    loading.value = false;
-  } catch (e) {
-    loading.value = false
-    console.error(e)
-  }
+    loading.value = true
+    try {
+        const res = await requestUserDetail(id.value)
+        userInfo.value = res.data || {}
+    } catch (e) {
+        ElMessage.error(e?.response?.data?.message || '获取用户详情失败')
+    } finally {
+        loading.value = false
+    }
 }
 
 onMounted(() => {
-  getUserDetail(id.value);
+    getUserDetail()
 })
-
-
 </script>
+
 <template>
-  <div id="user-info-container">
-    <div id="user-info">
-      <el-card style="max-width: 800px" v-loading="loading">
-        <template #header>
-          <div id="head">
-            <div id="left-head">
-              <p>{{ userInfo.title || userInfo.username }}</p>
-              <div id="head-more-info">
-                <span>{{ userInfo.mobile }}</span>
-              </div>
-            </div>
+    <div class="user-info-container">
+        <el-card class="card" v-loading="loading">
+            <template #header>
+                <div class="head">
+                    <el-avatar :src="userInfo.avatar" :size="48" />
+                    <span class="name">{{ userInfo.username }}</span>
+                </div>
+            </template>
+            <el-descriptions :column="2" border>
+                <el-descriptions-item label="用户ID">{{ userInfo.id }}</el-descriptions-item>
+                <el-descriptions-item label="用户名">{{ userInfo.username }}</el-descriptions-item>
+                <el-descriptions-item label="邮箱">{{ userInfo.email }}</el-descriptions-item>
+                <el-descriptions-item label="角色">
+                    <el-tag size="small">{{ userInfo.role_name }}</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="简介">{{ userInfo.bio || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="姓名">{{ userInfo.name || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="地区">{{ userInfo.area || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="VIP">{{ userInfo.vip ?? '-' }}</el-descriptions-item>
+                <el-descriptions-item label="创建时间">{{ formatTime(userInfo.created_at) }}</el-descriptions-item>
+                <el-descriptions-item label="更新时间">{{ formatTime(userInfo.updated_at) }}</el-descriptions-item>
+            </el-descriptions>
+        </el-card>
 
-            <div id="right-head">
-              <el-avatar :src="userInfo.avatar" :size="40" />
-            </div>
-
-          </div>
-        </template>
-        <el-descriptions :column="2" border>
-          <el-descriptions-item :label="$t('username')">{{ userInfo.username }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('position')">{{ userInfo.title }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('mobile')">{{ userInfo.mobile }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('gender')">{{ userInfo.gender }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('nationality')">{{ userInfo.nationality }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('address')">{{ userInfo.address }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('industry')">{{ userInfo.major }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('honor')">{{ userInfo.glory }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('role')">
-            <el-tag v-for="role in userInfo.role" :key="role.id" size="small">
-              {{ role.title }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item :label="$t('remarks')">
-            <span v-for="(item, index) in userInfo.remark" :key="index">
-              {{ item }}<span v-if="index < userInfo.remark.length - 1">, </span>
-            </span>
-          </el-descriptions-item>
-        </el-descriptions>
-
-      </el-card>
+        <div class="footer">
+            <el-button type="primary" @click="router.back()">返回</el-button>
+        </div>
     </div>
-
-    <div id="user-info-footer">
-      <el-button type="primary" @click="$router.back()">{{ $t('back') }}</el-button>
-      <el-button type="success" v-print="printObj">{{ $t('print') }}</el-button>
-    </div>
-  </div>
-
 </template>
 
 <style scoped>
-#user-info-container {
-  width: 100%;
-  margin: 0 auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.user-info-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
 }
-
-#user-info {
-  width: 100%;
-  margin: 0 auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.card {
+    width: 100%;
+    max-width: 800px;
 }
-
-#user-info-footer {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
+.head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
-
-.user-profile {
-  border: 1px solid #e4e7ed;
-  padding: 20px;
+.name {
+    font-size: 16px;
+    font-weight: bold;
 }
-
-#head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-#footer-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+.footer {
+    margin-top: 16px;
 }
 </style>

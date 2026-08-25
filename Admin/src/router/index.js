@@ -8,9 +8,9 @@ import PermissionManage from '../views/privateViews/PermissionManage.vue'
 import RoleManage from '../views/privateViews/RoleManage.vue'
 import ArticleCreate from '../views/privateViews/ArticleCreate.vue'
 import UserManage from '../views/privateViews/UserManage.vue'
-import ArticleRank from '../views/publicViews/ArticleRank.vue'
 import ArticleDetail from '../views/publicViews/ArticleDetail.vue'
-import UserImport from '../views/privateViews/UserImport.vue'
+import NotificationCenter from '../views/privateViews/NotificationCenter.vue'
+import NotificationManage from '../views/privateViews/NotificationManage.vue'
 
 
 
@@ -65,20 +65,10 @@ const Routes = [
                             title: '用户管理',
                             icon: 'user-manage',
                             private: true,
+                            roles: [1], // 仅 admin
                         },
 
                     },
-                    {
-                        path: '/user/user-import',
-                        name: 'user-import',
-                        component: UserImport,
-                        meta: {
-                            title: '导入用户',
-                            icon: 'user-import',
-                            private: true,
-                        }
-                    },
-
                     {
                         path: '/user/role-manage',
                         name: 'role-manage',
@@ -87,6 +77,7 @@ const Routes = [
                             title: '角色管理',
                             icon: 'role-manage',
                             private: true,
+                            roles: [1], // 仅 admin
                         }
                     },
                     {
@@ -97,11 +88,44 @@ const Routes = [
                             title: '权限管理',
                             icon: 'permission-manage',
                             private: true,
+                            roles: [1], // 仅 admin
                         }
                     }
 
                 ]
 
+            },
+            {
+                path: '/notification',
+                name: 'notification',
+                meta: {
+                    title: '通知',
+                    icon: 'notification',
+                    private: false,
+                },
+                children: [
+                    {
+                        path: '/notification/notification-center',
+                        name: 'notification-center',
+                        component: NotificationCenter,
+                        meta: {
+                            title: '通知中心',
+                            icon: 'notification-center',
+                            private: false,
+                        }
+                    },
+                    {
+                        path: '/notification/notification-manage',
+                        name: 'notification-manage',
+                        component: NotificationManage,
+                        meta: {
+                            title: '通知管理',
+                            icon: 'notification-manage',
+                            private: true,
+                            roles: [1], // 仅 admin
+                        }
+                    }
+                ]
             },
             {
                 path: '/article',
@@ -120,6 +144,7 @@ const Routes = [
                             title: '文章管理',
                             icon: 'article-manage',
                             private: true,
+                            roles: [1, 2, 3], // admin + editor + 普通用户（自己的文章）
                         }
                     },
                     {
@@ -130,16 +155,7 @@ const Routes = [
                             title: '文章创建',
                             icon: 'article-create',
                             private: true,
-                        }
-                    },
-                    {
-                        path: '/article/article-rank',
-                        name: 'article-rank',
-                        component: ArticleRank,
-                        meta: {
-                            title: '文章排名',
-                            icon: 'article-rank',
-                            private: false,
+                            roles: [1, 2, 3], // admin + editor + 普通用户（自己的文章）
                         }
                     },
                     {

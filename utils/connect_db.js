@@ -17,8 +17,12 @@ const pool = mysql.createPool({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    connectionLimit: 20,   // 最大连接数，支撑较大并发
+    maxIdle: 10,           // 空闲连接保留上限
+    idleTimeout: 60000,    // 空闲连接超时释放（毫秒）
+    queueLimit: 0,         // 0 表示等待队列无上限
+    enableKeepAlive: true, // 开启 TCP keep-alive，避免空闲连接被断开
+    keepAliveInitialDelay: 0
 });
 
 

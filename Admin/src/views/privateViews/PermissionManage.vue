@@ -1,149 +1,89 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { requestPermissionList } from '../../composables/useRequest';
+import { ref, onMounted, reactive } from 'vue'
+import { requestPermissionList, requestPermissionUpdate } from '../../composables/useRequest'
+import { ElMessage } from 'element-plus'
 
 const permissionList = ref([])
-const tableLayout = ref('fixed')
 const loading = ref(false)
+
+const dialogVisible = ref(false)
+const form = reactive({
+    permission_id: null,
+    permission_name: '',
+    permission_description: ''
+})
+
 const getPermissionList = async () => {
     loading.value = true
-    const res = await requestPermissionList()
-    permissionList.value = res.data
-    loading.value = false
-                                                                   
+    try {
+        const res = await requestPermissionList()
+        permissionList.value = res.data.list || []
+    } catch (e) {
+        ElMessage.error(e?.response?.data?.message || '获取权限列表失败')
+    } finally {
+        loading.value = false
+    }
 }
 
+const openEdit = (row) => {
+    Object.assign(form, {
+        permission_id: row.permission_id,
+        permission_name: row.permission_name,
+        permission_description: row.permission_description
+    })
+    dialogVisible.value = true
+}
 
-
-const tableData = [
-  {
-    id: 1,
-    date: '2016-05-02',
-    name: 'wangxiaohu',
-    address: 'No. 189, Grove St, Los Angeles',
-  },
-  {
-    id: 2,
-    date: '2016-05-04',
-    name: 'wangxiaohu',
-    address: 'No. 189, Grove St, Los Angeles',
-  },
-  {
-    id: 3,
-    date: '2016-05-01',
-    name: 'wangxiaohu',
-    address: 'No. 189, Grove St, Los Angeles',
-    children: [
-      {
-        id: 31,
-        date: '2016-05-01',
-        name: 'wangxiaohu',
-        address: 'No. 189, Grove St, Los Angeles',
-      },
-      {
-        id: 32,
-        date: '2016-05-01',
-        name: 'wangxiaohu',
-        address: 'No. 189, Grove St, Los Angeles',
-      },
-    ],
-  },
-  {
-    id: 4,
-    date: '2016-05-03',
-    name: 'wangxiaohu',
-    address: 'No. 189, Grove St, Los Angeles',
-  },
-]
-
-
+const submitForm = async () => {
+    if (!form.permission_name) {
+        ElMessage.warning('请填写权限名称')
+        return
+    }
+    try {
+        await requestPermissionUpdate({
+            permission_id: form.permission_id,
+            permission_name: form.permission_name,
+            permission_description: form.permission_description
+        })
+        ElMessage.success('修改权限成功')
+        dialogVisible.value = false
+        getPermissionList()
+    } catch (e) {
+        ElMessage.error(e?.response?.data?.message || '修改失败')
+    }
+}
 
 onMounted(() => {
     getPermissionList()
 })
-
-
-
 </script>
 
-<!-- [
-    {
-        "id": "1",
-        "permissionName": "员工管理",
-        "permissionMark": "userManage",
-        "permissionDesc": "员工管理菜单",
-        "children": [
-            {
-                "id": "1-1",
-                "permissionName": "分配角色",
-                "permissionMark": "distributeRole",
-                "permissionDesc": "为员工分配角色"
-            },
-            {
-                "id": "1-2",
-                "permissionName": "导入员工",
-                "permissionMark": "importUser",
-                "permissionDesc": "通过 excel 导入员工"
-            },
-            {
-                "id": "1-3",
-                "permissionName": "删除员工",
-                "permissionMark": "removeUser",
-                "permissionDesc": "删除员工"
-            }
-        ]
-    },
-    {
-        "id": "2",
-        "permissionName": "角色列表",
-        "permissionMark": "roleList",
-        "permissionDesc": "角色列表菜单",
-        "children": [
-            {
-                "id": "2-1",
-                "permissionName": "分配权限",
-                "permissionMark": "distributePermission",
-                "permissionDesc": "为角色分配权限"
-            }
-        ]
-    },
-    {
-        "id": "3",
-        "permissionName": "权限列表",
-        "permissionMark": "permissionList",
-        "permissionDesc": "权限列表菜单",
-        "children": []
-    },
-    {
-        "id": "4",
-        "permissionName": "文章排名",
-        "permissionMark": "articleRanking",
-        "permissionDesc": "文章排名菜单",
-        "children": []
-    },
-    {
-        "id": "5",
-        "permissionName": "创建文章",
-        "permissionMark": "articleCreate",
-        "permissionDesc": "创建文章页面",
-        "children": []
-    }
-] -->
 <template>
-    <el-table
-      :data="permissionList"
-      style="width: 100%; margin-bottom: 20px"
-      row-key="id"
-      border
-      default-expand-all
-      :table-layout="tableLayout"
-      v-loading="loading"
-      :tree-props="{ children: 'children' }"
-      
-    >
-      <el-table-column prop="id" :label="$t('permission_id')" sortable />
-      <el-table-column align="center" prop="permissionName" :label="$t('permission_name')" sortable />
-      <el-table-column align="center" prop="permissionMark" :label="$t('permission_mark')" sortable />
-      <el-table-column align="center" prop="permissionDesc" :label="$t('permission_description')" sortable />
-    </el-table>
+    <div>
+        <el-table :data="permissionList" border stripe v-loading="loading">
+            <el-table-column align="center" prop="permission_id" label="权限ID" width="120" />
+            <el-table-column align="center" prop="permission_name" label="权限名称" />
+            <el-table-column align="center" prop="permission_description" label="权限描述" />
+            <el-table-column align="center" label="操作" width="140">
+                <template #default="scope">
+                    <el-button type="primary" size="small" @click="openEdit(scope.row)">编辑</el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+
+        <el-dialog v-model="dialogVisible" title="编辑权限" width="480px">
+            <el-form :model="form" label-width="80px">
+                <el-form-item label="权限名称">
+                    <el-input v-model="form.permission_name" placeholder="请输入权限名称" />
+                </el-form-item>
+                <el-form-item label="权限描述">
+                    <el-input v-model="form.permission_description" type="textarea" placeholder="请输入权限描述" />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="dialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="submitForm">保存</el-button>
+            </template>
+        </el-dialog>
+    </div>
 </template>
