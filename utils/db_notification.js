@@ -16,10 +16,10 @@ const { pool } = require('./connect_db')
  * @param {number|null} target_id target_type='user' 时为 user_id，='role' 时为 role_id
  * @returns {number} 新通知的 notification_id
  */
-const notification_add = async (title, content, sender_id, target_type, target_id) => {
+const notification_add = async (title, content, sender_id, target_type, target_id, type = 'announcement', importance = 'medium') => {
     try {
-        const sql = 'INSERT INTO notification (title, content, sender_id, target_type, target_id) VALUES (?, ?, ?, ?, ?)'
-        const [result] = await pool.query(sql, [title, content, sender_id, target_type, target_id || null])
+        const sql = 'INSERT INTO notification (title, content, type, importance, sender_id, target_type, target_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        const [result] = await pool.query(sql, [title, content, type, importance, sender_id, target_type, target_id || null])
         return result.insertId
     } catch (error) {
         console.error('插入通知错误:', error)
@@ -39,7 +39,7 @@ const notification_add = async (title, content, sender_id, target_type, target_i
 const notification_getForUser = async (user_id) => {
     try {
         const sql = `
-            SELECT n.notification_id, n.title, n.content, n.sender_id, n.target_type, n.target_id, n.created_at,
+            SELECT n.notification_id, n.title, n.content, n.type, n.importance, n.sender_id, n.target_type, n.target_id, n.created_at,
                    COALESCE(nr.is_read, 0) AS is_read
             FROM notification n
             LEFT JOIN notification_read nr
@@ -118,10 +118,63 @@ const notification_getUserRoleId = async (user_id) => {
     }
 }
 
+/**
+ * 按 id 查询通知详情（管理员编辑用）
+ */
+const notification_getById = async (notification_id) => {
+    try {
+        const sql = 'SELECT * FROM notification WHERE notification_id = ?'
+        const [rows] = await pool.query(sql, [notification_id])
+        return rows[0] || null
+    } catch (error) {
+        console.error('查询通知详情错误:', error)
+        throw error
+    }
+}
+
+/**
+ * 更新通知（管理员）
+ */
+const notification_update = async (notification_id, { title, content, target_type, target_id, type, importance }) => {
+    try {
+        const fields = []
+        const params = []
+        if (title !== undefined) { fields.push('title = ?'); params.push(title) }
+        if (content !== undefined) { fields.push('content = ?'); params.push(content) }
+        if (target_type !== undefined) { fields.push('target_type = ?'); params.push(target_type) }
+        if (target_id !== undefined) { fields.push('target_id = ?'); params.push(target_id || null) }
+        if (type !== undefined) { fields.push('type = ?'); params.push(type) }
+        if (importance !== undefined) { fields.push('importance = ?'); params.push(importance) }
+        if (fields.length === 0) return false
+        params.push(notification_id)
+        await pool.query(`UPDATE notification SET ${fields.join(', ')} WHERE notification_id = ?`, params)
+        return true
+    } catch (error) {
+        console.error('更新通知错误:', error)
+        throw error
+    }
+}
+
+/**
+ * 删除通知（管理员）
+ */
+const notification_delete = async (notification_id) => {
+    try {
+        await pool.query('DELETE FROM notification WHERE notification_id = ?', [notification_id])
+        return true
+    } catch (error) {
+        console.error('删除通知错误:', error)
+        throw error
+    }
+}
+
 module.exports = {
     notification_add,
     notification_getForUser,
     notification_markRead,
     notification_getUnreadCount,
-    notification_getUserRoleId
+    notification_getUserRoleId,
+    notification_getById,
+    notification_update,
+    notification_delete
 }

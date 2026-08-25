@@ -32,6 +32,7 @@ import {
   Operation,
   Notebook,
   Bell,
+  Monitor,
 } from '@element-plus/icons-vue'
 
 
@@ -74,7 +75,6 @@ onMounted(() => {
        <el-icon><Notebook /></el-icon>
         <span>{{ $t('article') }}</span>
       </template>
-        <el-menu-item index="/article/article-detail">{{ $t('article_detail') }}</el-menu-item>
         <el-menu-item index="/article/article-create">{{ $t('article_create') }}</el-menu-item>
         <el-menu-item index="/article/article-manage">{{ $t('article_manage') }}</el-menu-item>
     </el-sub-menu>
@@ -87,6 +87,11 @@ onMounted(() => {
         <el-menu-item index="/notification/notification-center">{{ $t('notification_center') }}</el-menu-item>
         <el-menu-item v-if="isAdmin" index="/notification/notification-manage">{{ $t('notification_manage') }}</el-menu-item>
     </el-sub-menu>
+
+    <el-menu-item v-if="isAdmin" index="/system/system-monitor">
+      <el-icon><Monitor /></el-icon>
+      <template #title>{{ $t('system_monitor') }}</template>
+    </el-menu-item>
   </el-menu>
 </template>
 

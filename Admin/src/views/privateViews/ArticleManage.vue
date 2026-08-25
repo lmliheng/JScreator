@@ -30,8 +30,12 @@ const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
 const keyword = ref('')
+const author = ref('')
 const categoryId = ref(null)
 const statusFilter = ref('') // ''=全部，0=草稿，1=已发布，2=仅自己可见
+
+// 博客前端地址：本地开发指向 5173，生产部署同域根路径
+const blogBase = process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:5173'
 
 const categoryList = ref([])
 // 普通用户：/article/mine 不支持 keyword/category 查询，故拉取全量后本地过滤分页
@@ -63,6 +67,10 @@ const applyMineFilter = () => {
     if (kw) {
         arr = arr.filter((a) => String(a.title || '').includes(kw) || String(a.content || '').includes(kw))
     }
+    if (author.value.trim()) {
+        const aw = author.value.trim()
+        arr = arr.filter((a) => String(a.author_name || a.user_id || '').includes(aw))
+    }
     if (categoryId.value != null && categoryId.value !== '') {
         const cid = Number(categoryId.value)
         arr = arr.filter((a) => (a.category_ids || []).includes(cid))
@@ -83,6 +91,7 @@ const loadList = async () => {
                 page: page.value,
                 pageSize: pageSize.value,
                 keyword: keyword.value.trim() || undefined,
+                author: author.value.trim() || undefined,
                 category_id: categoryId.value || undefined,
                 status: statusFilter.value === '' ? 'all' : statusFilter.value
             })
@@ -109,6 +118,7 @@ const handleSearch = () => {
 
 const handleReset = () => {
     keyword.value = ''
+    author.value = ''
     categoryId.value = null
     statusFilter.value = ''
     page.value = 1
@@ -158,6 +168,10 @@ const handleDelete = (row) => {
     }).catch(() => {})
 }
 
+const viewArticle = (row) => {
+    window.open(`${blogBase}/article/${row.article_id}`, '_blank')
+}
+
 onMounted(() => {
     getCategories()
     loadList()
@@ -179,7 +193,15 @@ watch(isAdminOrEditor, () => {
                     v-model="keyword"
                     placeholder="输入标题/内容关键词"
                     clearable
-                    style="width: 240px; margin-right: 8px"
+                    style="width: 200px; margin-right: 8px"
+                    @keyup.enter="handleSearch"
+                    @clear="handleSearch"
+                />
+                <el-input
+                    v-model="author"
+                    placeholder="输入作者"
+                    clearable
+                    style="width: 160px; margin-right: 8px"
                     @keyup.enter="handleSearch"
                     @clear="handleSearch"
                 />
@@ -250,9 +272,10 @@ watch(isAdminOrEditor, () => {
                     {{ formatTime(scope.row.created_at) }}
                 </template>
             </el-table-column>
-            <el-table-column align="center" label="操作" width="180">
+            <el-table-column align="center" label="操作" width="220">
                 <template #default="scope">
                     <el-button type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
+                    <el-button type="success" size="small" @click="viewArticle(scope.row)">查看</el-button>
                     <el-button type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
                 </template>
             </el-table-column>

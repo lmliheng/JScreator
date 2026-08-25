@@ -286,6 +286,62 @@ const register_register = async (id, username, email, password) => {
     }
 }
 
+/**
+ * 按 github_id 查询用户（GitHub 登录用）
+ */
+const user_getByGithubId = async (github_id) => {
+    try {
+        const sql = 'SELECT * FROM user WHERE github_id = ?'
+        const [rows] = await pool.query(sql, [github_id])
+        return rows[0] || null
+    } catch (error) {
+        console.error('按 github_id 查询用户错误:', error)
+        throw error
+    }
+}
+
+/**
+ * GitHub 自动注册用户（role_id 默认 2 普通用户）
+ */
+const user_registerGithub = async ({ github_id, username, name, email, password, avatar }) => {
+    try {
+        const sql = 'INSERT INTO user (username, name, email, github_id, password, avatar, role_id) VALUES (?, ?, ?, ?, ?, ?, 2)'
+        const [result] = await pool.query(sql, [username, name || null, email || null, github_id, password, avatar || null])
+        return result.insertId
+    } catch (error) {
+        console.error('GitHub 注册用户错误:', error)
+        throw error
+    }
+}
+
+/**
+ * 按 email 查询用户（邮箱登录用）
+ */
+const user_getByEmail = async (email) => {
+    try {
+        const sql = 'SELECT * FROM user WHERE email = ?'
+        const [rows] = await pool.query(sql, [email])
+        return rows[0] || null
+    } catch (error) {
+        console.error('按邮箱查询用户错误:', error)
+        throw error
+    }
+}
+
+/**
+ * 邮箱验证码登录自动注册用户
+ */
+const user_registerEmail = async ({ username, email, password }) => {
+    try {
+        const sql = 'INSERT INTO user (username, name, email, password, role_id) VALUES (?, ?, ?, ?, 2)'
+        const [result] = await pool.query(sql, [username, username, email, password])
+        return result.insertId
+    } catch (error) {
+        console.error('邮箱注册用户错误:', error)
+        throw error
+    }
+}
+
 
 const register_checkExistByEmail = async (email) => {
     try {
@@ -728,6 +784,10 @@ module.exports = {
     user_deleteBatch, // 批量删除用户
     user_getById, // 按 id 查询单个用户
     user_getPasswordById, // 按 id 查询用户密码哈希（仅管理员）
+    user_getByGithubId, // 按 github_id 查询用户
+    user_registerGithub, // GitHub 自动注册用户
+    user_getByEmail, // 按 email 查询用户
+    user_registerEmail, // 邮箱验证码登录自动注册用户
     role_getAll, // 查询所有角色
     user_getAll, // 查询所有用户信息
     user_getAllByPage, // 分页查询所有用户信息

@@ -89,7 +89,7 @@ const attachCategoryArrays = (row) => {
 /**
  * 公开文章列表（分页 + 按分类 + 关键词，仅 status=1 已发布）
  */
-const article_list = async ({ page = 1, pageSize = 10, category_id, keyword, status } = {}) => {
+const article_list = async ({ page = 1, pageSize = 10, category_id, keyword, status, author } = {}) => {
     page = parseInt(page, 10) || 1
     pageSize = parseInt(pageSize, 10) || 10
     if (page < 1) page = 1
@@ -110,6 +110,10 @@ const article_list = async ({ page = 1, pageSize = 10, category_id, keyword, sta
     if (keyword) {
         where.push('(a.title LIKE ? OR a.content LIKE ?)')
         params.push(`%${keyword}%`, `%${keyword}%`)
+    }
+    if (author) {
+        where.push('EXISTS (SELECT 1 FROM user u WHERE u.id = a.user AND (u.name LIKE ? OR u.username LIKE ?))')
+        params.push(`%${author}%`, `%${author}%`)
     }
     if (category_id) {
         where.push('EXISTS (SELECT 1 FROM articleandcategory_middle acm WHERE acm.article_id = a.article_id AND acm.category_id = ?)')

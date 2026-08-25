@@ -23,3 +23,16 @@ export function register({ username, email, password }) {
 export function updateProfile(data) {
   return http.put('/userInfo', data).then((res) => res)
 }
+
+// 发送邮箱验证码
+export function sendEmailCode(email) {
+  return http.post('/email/send-code', { email }).then((res) => res)
+}
+
+// 邮箱验证码登录
+export function emailLogin(email, code) {
+  return http.post('/email/login', { email, code }).then((res) => ({
+    token: res.token,
+    user: res.user,
+  }))
+}

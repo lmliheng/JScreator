@@ -10,6 +10,27 @@ export const login = (account, password) => api({
     }
 })
 
+// 注册
+export const register = (data) => api({
+    url: '/sys/register',
+    method: 'post',
+    data
+})
+
+// 发送邮箱验证码
+export const sendEmailCode = (email) => api({
+    url: '/email/send-code',
+    method: 'post',
+    data: { email }
+})
+
+// 邮箱验证码登录
+export const emailLogin = (email, code) => api({
+    url: '/email/login',
+    method: 'post',
+    data: { email, code }
+})
+
 export const requestUserInfo = () => api({
     url: '/sys/profile',
     method: 'get'
@@ -232,4 +253,25 @@ export const requestNotificationRead = (notification_id) => api({
     url: '/notification/read',
     method: 'post',
     data: { notification_id }
+})
+
+// 管理员更新通知
+export const requestNotificationUpdate = (data) => api({
+    url: '/notification/update',
+    method: 'put',
+    data
+})
+
+// 管理员删除通知
+export const requestNotificationDelete = (notification_id) => api({
+    url: '/notification/delete',
+    method: 'delete',
+    data: { notification_id }
+})
+
+// ============ 系统监控（仅管理员） ============
+
+export const requestSystemMonitor = () => api({
+    url: '/system-monitor',
+    method: 'get'
 })

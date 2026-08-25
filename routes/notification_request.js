@@ -6,7 +6,10 @@ const {
     notification_getForUser,
     notification_markRead,
     notification_getUnreadCount,
-    notification_getUserRoleId
+    notification_getUserRoleId,
+    notification_getById,
+    notification_update,
+    notification_delete
 } = require('../utils/db_notification')
 
 /**
@@ -54,7 +57,7 @@ router.post('/notification/add', async (req, res) => {
     const isAdmin = await requireAdmin(req, res, decoded.id)
     if (!isAdmin) return
 
-    const { title, content, target_type, target_id } = req.body
+    const { title, content, target_type, target_id, type, importance } = req.body
     if (!title || !content) {
         return res.status(400).json({ code: 400, success: false, message: '标题和内容不能为空' })
     }
@@ -65,9 +68,13 @@ router.post('/notification/add', async (req, res) => {
     if (target_type !== 'all' && !target_id) {
         return res.status(400).json({ code: 400, success: false, message: "target_type 为 'user' 或 'role' 时必须提供 target_id" })
     }
+    const validNotifTypes = ['system', 'announcement', 'reminder']
+    const notifType = validNotifTypes.includes(type) ? type : 'announcement'
+    const validImportance = ['high', 'medium', 'low']
+    const importanceVal = validImportance.includes(importance) ? importance : 'medium'
 
     try {
-        const insertId = await notification_add(title, content, decoded.id, target_type, target_id)
+        const insertId = await notification_add(title, content, decoded.id, target_type, target_id, notifType, importanceVal)
         res.json({
             code: 200,
             success: true,
@@ -135,6 +142,49 @@ router.post('/notification/read', async (req, res) => {
         })
     } catch (error) {
         console.error('标记已读错误:', error)
+        res.status(500).json({ code: 500, success: false, message: '服务器内部错误' })
+    }
+})
+
+// 管理员更新通知
+router.put('/notification/update', async (req, res) => {
+    const decoded = resolveUser(req, res)
+    if (!decoded) return
+    const isAdmin = await requireAdmin(req, res, decoded.id)
+    if (!isAdmin) return
+
+    const { notification_id, title, content, target_type, target_id, type, importance } = req.body
+    if (!notification_id) {
+        return res.status(400).json({ code: 400, success: false, message: 'notification_id 不能为空' })
+    }
+    try {
+        const updated = await notification_update(notification_id, { title, content, target_type, target_id, type, importance })
+        if (updated === false) {
+            return res.status(400).json({ code: 400, success: false, message: '没有需要更新的字段' })
+        }
+        res.json({ code: 200, success: true, message: '更新通知成功' })
+    } catch (error) {
+        console.error('更新通知错误:', error)
+        res.status(500).json({ code: 500, success: false, message: '服务器内部错误' })
+    }
+})
+
+// 管理员删除通知
+router.delete('/notification/delete', async (req, res) => {
+    const decoded = resolveUser(req, res)
+    if (!decoded) return
+    const isAdmin = await requireAdmin(req, res, decoded.id)
+    if (!isAdmin) return
+
+    const { notification_id } = req.body
+    if (!notification_id) {
+        return res.status(400).json({ code: 400, success: false, message: 'notification_id 不能为空' })
+    }
+    try {
+        await notification_delete(notification_id)
+        res.json({ code: 200, success: true, message: '删除通知成功' })
+    } catch (error) {
+        console.error('删除通知错误:', error)
         res.status(500).json({ code: 500, success: false, message: '服务器内部错误' })
     }
 })

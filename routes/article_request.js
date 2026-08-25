@@ -64,9 +64,9 @@ const getLoginUser = (req) => {
 
 // 公开文章列表：分页 + 按分类 + 关键词
 router.get('/article/list', async (req, res) => {
-    const { page, pageSize, category_id, keyword, status } = req.query
+    const { page, pageSize, category_id, keyword, status, author } = req.query
     try {
-        const data = await article_list({ page, pageSize, category_id, keyword, status })
+        const data = await article_list({ page, pageSize, category_id, keyword, status, author })
         res.json({ code: 200, success: true, message: '获取成功', data })
     } catch (error) {
         console.error('获取文章列表错误:', error)

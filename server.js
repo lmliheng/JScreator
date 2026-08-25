@@ -19,7 +19,10 @@ app.use(require('./routes/user_request'))
 app.use(require('./routes/role_request'))
 app.use(require('./routes/permission_request'))
 app.use(require('./routes/notification_request'))
+app.use(require('./routes/system_monitor_request'))
 app.use(require('./routes/init_request'))
+app.use(require('./routes/auth_github'))
+app.use(require('./routes/auth_email'))
 
 
 async function startServer() {

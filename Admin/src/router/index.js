@@ -8,9 +8,9 @@ import PermissionManage from '../views/privateViews/PermissionManage.vue'
 import RoleManage from '../views/privateViews/RoleManage.vue'
 import ArticleCreate from '../views/privateViews/ArticleCreate.vue'
 import UserManage from '../views/privateViews/UserManage.vue'
-import ArticleDetail from '../views/publicViews/ArticleDetail.vue'
 import NotificationCenter from '../views/privateViews/NotificationCenter.vue'
 import NotificationManage from '../views/privateViews/NotificationManage.vue'
+import SystemMonitor from '../views/privateViews/SystemMonitor.vue'
 
 
 
@@ -158,17 +158,18 @@ const Routes = [
                             roles: [1, 2, 3], // admin + editor + 普通用户（自己的文章）
                         }
                     },
-                    {
-                        path: '/article/article-detail',
-                        name: 'article-detail',
-                        component: ArticleDetail,
-                        meta: {
-                            title: '文章详情',
-                            icon: 'article-detail',
-                            private: false,
-                        }
-                    },
                 ]
+            },
+            {
+                path: '/system/system-monitor',
+                name: 'system-monitor',
+                component: SystemMonitor,
+                meta: {
+                    title: '系统监控',
+                    icon: 'system-monitor',
+                    private: true,
+                    roles: [1], // 仅 admin
+                }
             }
         ]
 

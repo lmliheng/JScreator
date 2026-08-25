@@ -19,6 +19,9 @@ module.exports = (env = {}) => {
         output: {
             path: path.resolve(__dirname, 'dist'),
             filename: isProduction ? '[name].[contenthash:8].js' : '[name].js',
+            // 生产部署在站点 /admin/ 子路径下，用绝对路径，
+            // 避免访问 /admin（无尾斜杠）时相对资源被解析到站点根目录导致白屏
+            publicPath: isProduction ? '/admin/' : '/',
             clean: true
         },
 

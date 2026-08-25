@@ -21,6 +21,9 @@ const authorStore = useAuthorStore()
 
 const open = ref(false)
 
+// 后台入口地址：本地开发指向 8085，生产部署在同域 /admin/ 下
+const adminUrl = import.meta.env.DEV ? 'http://localhost:8085/' : '/admin/'
+
 // 侧边栏展示的信息优先级：当前浏览的作者 > 登录用户 > props 默认（JScreator）
 const displayName = computed(
   () => authorStore.current?.name || authorStore.current?.username || auth.displayName || props.nickname || 'JScreator',
@@ -115,6 +118,12 @@ watch(() => route.fullPath, closeMenu)
         <div class="mb-5">
           <template v-if="auth.isLoggedIn">
             <p class="mb-2 text-sm text-faint">你好，{{ displayName }}</p>
+            <a
+              :href="adminUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="nav-link nav-link-accent mb-1 w-full justify-center"
+            >进入后台</a>
             <button class="nav-link w-full text-left" @click="logout">退出登录</button>
           </template>
           <template v-else>
@@ -210,6 +219,13 @@ watch(() => route.fullPath, closeMenu)
       <div class="mt-4 border-t border-line px-2 pt-4">
         <template v-if="auth.isLoggedIn">
           <p class="mb-2 text-sm text-faint">你好，{{ displayName }}</p>
+          <a
+            :href="adminUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="nav-link nav-link-accent mb-1 w-full justify-center"
+            @click="closeMenu"
+          >进入后台</a>
           <button class="nav-link w-full text-left" @click="logout">退出登录</button>
         </template>
         <template v-else>
