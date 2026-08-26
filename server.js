@@ -57,6 +57,7 @@ app.use(require('./routes/upload_request'))
 app.use(require('./routes/social_request'))
 app.use(require('./routes/ad_request'))
 app.use(require('./routes/announcement_request'))
+app.use(require('./routes/backup_request'))
 
 // 路由全部挂载后，登记全部接口清单（系统监控的接口统计显示所有接口，未调用的为 0 次）
 const { registerRoutes } = require('./utils/api_monitor');

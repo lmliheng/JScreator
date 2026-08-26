@@ -402,3 +402,20 @@ export const requestAnnounceDelete = (id) => api({
     url: `/announcement/admin/delete/${id}`,
     method: 'delete'
 })
+
+// 数据库备份下载（仅 admin）—— 需要 blob 响应，不走响应拦截器解包；放宽超时（导出可能较慢）
+export const requestBackupDownload = () => {
+    return api({
+        url: '/backup/download',
+        method: 'get',
+        responseType: 'blob',
+        timeout: 120000
+    }).then((res) => {
+        // 拦截器返回 response.data（Blob）；文件名用时间戳兜底
+        let blob = res
+        if (res instanceof Blob) blob = res
+        else if (res && res.data instanceof Blob) blob = res.data
+        const filename = `backup-${Date.now()}.zip`
+        return { blob, filename }
+    })
+}

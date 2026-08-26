@@ -1,12 +1,39 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { requestSystemMonitor, requestApiStats } from '@/composables/useRequest'
+import { requestSystemMonitor, requestApiStats, requestBackupDownload } from '@/composables/useRequest'
 import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
 const data = ref(null)
 const apiStats = ref([])
 let timer = null
+
+// 数据库备份下载状态
+const backupLoading = ref(false)
+
+const downloadBackup = async () => {
+    backupLoading.value = true
+    try {
+        const res = await requestBackupDownload()
+        if (res && res.blob) {
+            const url = URL.createObjectURL(res.blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = res.filename || `backup-${Date.now()}.zip`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+            ElMessage.success('数据库备份已下载')
+        } else {
+            ElMessage.error('备份下载失败')
+        }
+    } catch (e) {
+        ElMessage.error(e?.response?.data?.message || '备份下载失败')
+    } finally {
+        backupLoading.value = false
+    }
+}
 
 const formatBytes = (bytes) => {
     if (bytes == null) return '-'
@@ -138,6 +165,28 @@ onBeforeUnmount(() => {
             </el-col>
         </el-row>
 
+        <!-- 数据库备份 -->
+        <el-card shadow="never" class="backup-card">
+            <div class="backup-row">
+                <div class="backup-info">
+                    <div class="backup-title">数据库备份下载</div>
+                    <div class="backup-desc">
+                        导出云数据库全部表的结构与数据，打包为 zip（含 .sql + README）。
+                        <br />兼容 MySQL 5.7（utf8mb4_general_ci），含敏感数据请妥善保管。
+                    </div>
+                </div>
+                <el-button
+                    type="primary"
+                    size="large"
+                    :loading="backupLoading"
+                    @click="downloadBackup"
+                >
+                    <template v-if="!backupLoading">⬇ 下载备份 ZIP</template>
+                    <template v-else>正在导出…</template>
+                </el-button>
+            </div>
+        </el-card>
+
         <!-- 详情 -->
         <el-row :gutter="16">
             <el-col :span="12">
@@ -264,6 +313,30 @@ onBeforeUnmount(() => {
     margin-top: 16px;
     text-align: center;
     font-size: 12px;
+    color: #909399;
+}
+
+/* 数据库备份卡片 */
+.backup-card {
+    margin-top: 16px;
+    border-radius: 8px;
+}
+.backup-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.backup-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #303133;
+}
+.backup-desc {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.7;
     color: #909399;
 }
 </style>
