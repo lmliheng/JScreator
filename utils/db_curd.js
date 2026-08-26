@@ -202,12 +202,27 @@ const user_getById = async (id) => {
         const sql =
             `
         SELECT u.id, u.username, u.email, u.avatar, u.bio, u.vip, u.checkinDay, u.name, u.area,
+               u.socials, u.featured_articles, u.github_id,
                u.created_at, u.updated_at, u.role_id, r.role_name
         FROM user u LEFT JOIN role r ON u.role_id = r.role_id
         WHERE u.id = ?
         `
         const [rows] = await pool.query(sql, [id])
-        return rows[0] || null
+        const row = rows[0] || null
+        if (row) {
+            // mysql2 对 JSON 列自动 parse，但防御性处理：字符串则 JSON.parse，异常给 []
+            const parseJson = (v) => {
+                if (v == null) return []
+                if (Array.isArray(v)) return v
+                if (typeof v === 'string') {
+                    try { return JSON.parse(v) || [] } catch (e) { return [] }
+                }
+                return []
+            }
+            row.socials = parseJson(row.socials)
+            row.featured_articles = parseJson(row.featured_articles)
+        }
+        return row
     } catch (error) {
         console.error('查询单个用户错误:', error)
         throw error

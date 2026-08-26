@@ -73,6 +73,12 @@ onMounted(() => {
         <el-menu-item index="/user/permission-manage">{{ $t('permission_manage') }}</el-menu-item>
     </el-sub-menu>
 
+    <!-- 主页设置：独立顶级菜单，所有角色可见（普通用户设置自己，admin 可设置所有人） -->
+    <el-menu-item index="/user/home-setting">
+      <el-icon><Operation /></el-icon>
+      <template #title>{{ $t('home_setting') }}</template>
+    </el-menu-item>
+
     <el-sub-menu index="3">
       <template #title>
        <el-icon><Notebook /></el-icon>
@@ -80,6 +86,7 @@ onMounted(() => {
       </template>
         <el-menu-item index="/article/article-create">{{ $t('article_create') }}</el-menu-item>
         <el-menu-item index="/article/article-manage">{{ $t('article_manage') }}</el-menu-item>
+        <el-menu-item v-if="isAdmin" index="/article/interaction-manage">{{ $t('interaction_manage') }}</el-menu-item>
     </el-sub-menu>
 
     <el-sub-menu index="4">
@@ -94,6 +101,16 @@ onMounted(() => {
     <el-menu-item v-if="isAdmin" index="/system/system-monitor">
       <el-icon><Monitor /></el-icon>
       <template #title>{{ $t('system_monitor') }}</template>
+    </el-menu-item>
+
+    <el-menu-item v-if="isAdmin" index="/system/ad-manage">
+      <el-icon><Monitor /></el-icon>
+      <template #title>{{ $t('ad_manage') }}</template>
+    </el-menu-item>
+
+    <el-menu-item v-if="isAdmin" index="/system/announcement-manage">
+      <el-icon><Monitor /></el-icon>
+      <template #title>{{ $t('announcement_manage') }}</template>
     </el-menu-item>
   </el-menu>
 </template>

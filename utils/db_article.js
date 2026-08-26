@@ -130,10 +130,14 @@ const article_list = async ({ page = 1, pageSize = 10, category_id, keyword, sta
         const listSql = `
             SELECT a.article_id, a.title, a.content, a.status, a.user AS user_id,
                    COALESCE(NULLIF(u.name, ''), u.username) AS author_name, a.created_at, a.updated_at,
+                   COUNT(DISTINCT al.id) AS like_count,
+                   COUNT(DISTINCT af.id) AS favorite_count,
                    GROUP_CONCAT(DISTINCT ac.category_id ORDER BY ac.category_id ASC) AS category_ids,
                    GROUP_CONCAT(DISTINCT ac.category_name ORDER BY ac.category_id ASC) AS category_names
             FROM article a
             LEFT JOIN user u ON a.user = u.id
+            LEFT JOIN article_like al ON al.article_id = a.article_id
+            LEFT JOIN article_favorite af ON af.article_id = a.article_id
             LEFT JOIN articleandcategory_middle acm ON acm.article_id = a.article_id
             LEFT JOIN article_category ac ON ac.category_id = acm.category_id
             ${whereSql}
@@ -142,7 +146,11 @@ const article_list = async ({ page = 1, pageSize = 10, category_id, keyword, sta
             LIMIT ? OFFSET ?
         `
         const [rows] = await pool.query(listSql, [...params, pageSize, offset])
-        const list = rows.map(attachCategoryArrays)
+        const list = rows.map((r) => ({
+            ...attachCategoryArrays(r),
+            like_count: Number(r.like_count) || 0,
+            favorite_count: Number(r.favorite_count) || 0,
+        }))
         return { list, total, page, pageSize }
     } catch (error) {
         console.error('查询文章列表错误:', error)

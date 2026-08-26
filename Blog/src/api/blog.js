@@ -33,3 +33,25 @@ export function getBlogArticles(username, params) {
     .get(`/blog/articles/${encodeURIComponent(username)}`, { params })
     .then((res) => res.data)
 }
+
+/**
+ * 全站最新文章流（门户首页）。
+ * GET /blog/feed?limit=6
+ * 返回 data = { list }
+ */
+export function getBlogFeed(params) {
+  return http
+    .get('/blog/feed', { params })
+    .then((res) => res.data)
+}
+
+/**
+ * 全站热议文章（按评论数排序，门户首页热门榜）。
+ * GET /blog/hot?limit=6
+ * 返回 data = { list }
+ */
+export function getBlogHot(params) {
+  return http
+    .get('/blog/hot', { params })
+    .then((res) => res.data)
+}

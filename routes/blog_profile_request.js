@@ -5,6 +5,8 @@ const {
     getArticlesByUsername,
     getUserList,
     getArticlesByIds,
+    getLatestArticles,
+    getHotArticles,
 } = require('../utils/db_blog_profile')
 
 /**
@@ -30,6 +32,30 @@ router.get('/blog/users', async (req, res) => {
     } catch (error) {
         console.error('获取用户列表错误:', error)
         res.status(500).json({ code: 500, success: false, message: '获取用户列表失败' })
+    }
+})
+
+// 博客首页：全站最新文章流（门户首页「最新文章」区块）
+router.get('/blog/feed', async (req, res) => {
+    const { limit } = req.query
+    try {
+        const list = await getLatestArticles(limit)
+        res.json({ code: 200, success: true, message: '获取成功', data: { list } })
+    } catch (error) {
+        console.error('获取全站最新文章错误:', error)
+        res.status(500).json({ code: 500, success: false, message: '获取最新文章失败' })
+    }
+})
+
+// 博客首页：全站热议文章（按评论数排序，门户首页「热门文章」区块）
+router.get('/blog/hot', async (req, res) => {
+    const { limit } = req.query
+    try {
+        const list = await getHotArticles(limit)
+        res.json({ code: 200, success: true, message: '获取成功', data: { list } })
+    } catch (error) {
+        console.error('获取热议文章错误:', error)
+        res.status(500).json({ code: 500, success: false, message: '获取热门文章失败' })
     }
 })
 

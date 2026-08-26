@@ -12,6 +12,22 @@ const routes = [
     path: '/',
     name: 'home',
     component: () => import('@/views/HomeView.vue'),
+    // 门户首页：全宽无侧边栏，与个人主页一致（Hero 内置导航）
+    meta: { layout: 'blank' },
+  },
+  {
+    path: '/users',
+    name: 'users',
+    component: () => import('@/views/UsersView.vue'),
+    // 全部博主列表：全宽无侧边栏（沿用首页观感）
+    meta: { layout: 'blank' },
+  },
+  {
+    path: '/me/favorites',
+    name: 'my-favorites',
+    component: () => import('@/views/FavoritesView.vue'),
+    // 我的收藏：全宽无侧边栏
+    meta: { layout: 'blank' },
   },
   {
     path: '/article/:id',

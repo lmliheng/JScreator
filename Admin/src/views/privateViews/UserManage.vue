@@ -278,6 +278,11 @@ const handleDetail = (row) => {
     router.push('/user/user-info/' + row.id)
 }
 
+// 跳转「主页设置」页并预选该用户（admin 可设置任意用户的主页）
+const handleHomeSetting = (row) => {
+    router.push({ path: '/user/home-setting', query: { username: row.username } })
+}
+
 onMounted(() => {
     getUser()
     getRoles()
@@ -326,11 +331,12 @@ onMounted(() => {
                     {{ formatTime(scope.row.created_at) }}
                 </template>
             </el-table-column>
-            <el-table-column align="center" label="操作" width="360">
+            <el-table-column align="center" label="操作" width="440">
                 <template #default="scope">
                     <el-button type="success" size="small" @click="handleDetail(scope.row)">详情</el-button>
                     <el-button type="primary" size="small" @click="openEdit(scope.row)">编辑</el-button>
-                    <el-button v-if="isAdmin" type="warning" size="small" @click="handleResetPassword(scope.row)">重置密码</el-button>
+                    <el-button type="warning" size="small" @click="handleHomeSetting(scope.row)">主页设置</el-button>
+                    <el-button v-if="isAdmin" type="danger" size="small" @click="handleResetPassword(scope.row)">重置密码</el-button>
                     <el-button type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
                 </template>
             </el-table-column>

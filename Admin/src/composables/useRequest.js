@@ -107,6 +107,19 @@ export const requestSelfUpdate = (data) => api({
     data
 })
 
+// 获取某用户已发布的文章列表（主页精选文章选择用，公开接口）
+export const requestBlogArticles = (username, params) => api({
+    url: `/blog/articles/${username}`,
+    method: 'get',
+    params
+})
+
+// 获取某用户的公开主页信息（含 socials / featured_articles）
+export const requestBlogProfile = (username) => api({
+    url: `/blog/profile/${username}`,
+    method: 'get'
+})
+
 // 本人重置密码
 export const requestSelfResetPassword = (password) => api({
     url: '/resetPassword',
@@ -300,4 +313,92 @@ export const requestCommentManageDelete = (comment_ids) => api({
     url: '/comment/manage/delete',
     method: 'delete',
     data: { comment_ids }
+})
+
+// ============ 互动管理（点赞 / 收藏，仅 admin） ============
+export const requestLikeManageList = (params) => api({
+    url: '/social/admin/likes',
+    method: 'get',
+    params
+})
+
+export const requestLikeManageDelete = (id) => api({
+    url: `/social/admin/likes/${id}`,
+    method: 'delete'
+})
+
+export const requestFavoriteManageList = (params) => api({
+    url: '/social/admin/favorites',
+    method: 'get',
+    params
+})
+
+export const requestFavoriteManageDelete = (id) => api({
+    url: `/social/admin/favorites/${id}`,
+    method: 'delete'
+})
+
+// ============ 广告管理（仅 admin） ============
+export const requestAdList = (params) => api({
+    url: '/ad/admin/list',
+    method: 'get',
+    params
+})
+
+export const requestAdDetail = (id) => api({
+    url: `/ad/admin/detail/${id}`,
+    method: 'get'
+})
+
+export const requestAdAdd = (data) => api({
+    url: '/ad/admin/add',
+    method: 'post',
+    data
+})
+
+export const requestAdUpdate = (id, data) => api({
+    url: `/ad/admin/update/${id}`,
+    method: 'put',
+    data
+})
+
+export const requestAdStatus = (id, status) => api({
+    url: `/ad/admin/status/${id}`,
+    method: 'put',
+    data: { status }
+})
+
+export const requestAdDelete = (id) => api({
+    url: `/ad/admin/delete/${id}`,
+    method: 'delete'
+})
+
+// ============ 公告管理（仅 admin） ============
+export const requestAnnounceList = (params) => api({
+    url: '/announcement/admin/list',
+    method: 'get',
+    params
+})
+
+export const requestAnnounceAdd = (data) => api({
+    url: '/announcement/admin/add',
+    method: 'post',
+    data
+})
+
+export const requestAnnounceUpdate = (id, data) => api({
+    url: `/announcement/admin/update/${id}`,
+    method: 'put',
+    data
+})
+
+export const requestAnnounceStatus = (id, status) => api({
+    url: `/announcement/admin/status/${id}`,
+    method: 'put',
+    data: { status }
+})
+
+export const requestAnnounceDelete = (id) => api({
+    url: `/announcement/admin/delete/${id}`,
+    method: 'delete'
 })

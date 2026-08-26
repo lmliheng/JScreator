@@ -1,12 +1,20 @@
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getBlogProfile, getBlogArticles } from '@/api/blog'
-import { updateProfile } from '@/api/auth'
-import http from '@/api/http'
+import { getBlogProfile } from '@/api/blog'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import ArticleCard from '@/components/ArticleCard.vue'
+import SiteFooter from '@/components/SiteFooter.vue'
+import {
+  toggleFollow,
+  getFollowing,
+  getFollowers,
+  getSocialStats,
+  getNotifications,
+  getUnreadCount,
+  markAllNotificationsRead,
+} from '@/api/social'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,6 +43,140 @@ const monogram = computed(() => displayName.value.trim().charAt(0).toUpperCase()
 const isSelf = computed(
   () => auth.isLoggedIn && username.value && username.value === auth.username,
 )
+
+// ===== 关注 / 粉丝 / 获赞统计 =====
+const socialStats = ref({ following: 0, followers: 0, liked: 0, isFollowing: false })
+const followingList = ref([])
+const followersList = ref([])
+const socialModal = ref(false) // 'following' | 'followers' | null
+const socialModalMode = ref(null)
+const socialModalLoading = ref(false)
+
+const fetchSocialStats = async () => {
+  try {
+    const res = await getSocialStats(username.value)
+    // social.js 已解包 body，res 即 stats 对象
+    if (res) {
+      socialStats.value = {
+        following: Number(res.following) || 0,
+        followers: Number(res.followers) || 0,
+        liked: Number(res.liked) || 0,
+        isFollowing: !!res.isFollowing,
+      }
+    }
+  } catch (e) {
+    // 统计加载失败不阻塞主页
+  }
+}
+
+const openSocialModal = async (mode) => {
+  if (!socialStats.value.following && !socialStats.value.followers) return
+  socialModalMode.value = mode
+  socialModal.value = true
+  socialModalLoading.value = true
+  try {
+    if (mode === 'following') {
+      const res = await getFollowing(username.value)
+      followingList.value = (res && res.list) || []
+    } else {
+      const res = await getFollowers(username.value)
+      followersList.value = (res && res.list) || []
+    }
+  } catch (e) {
+    toast.error(e?.response?.data?.message || '加载失败')
+  } finally {
+    socialModalLoading.value = false
+  }
+}
+
+const doFollow = async () => {
+  if (!auth.isLoggedIn) {
+    toast.error('请先登录')
+    router.push('/login')
+    return
+  }
+  if (isSelf.value) return
+  try {
+    const res = await toggleFollow(username.value)
+    // social.js 已解包 body，res 即 { following }
+    if (res) {
+      socialStats.value.isFollowing = !!res.following
+      socialStats.value.followers = Math.max(
+        0,
+        socialStats.value.followers + (res.following ? 1 : -1),
+      )
+      toast.success(res.following ? '关注成功' : '已取消关注')
+    }
+  } catch (e) {
+    toast.error(e?.response?.data?.message || '操作失败')
+  }
+}
+
+// ===== 互动通知（铃铛） =====
+const notifOpen = ref(false)
+const notifications = ref([])
+const unreadCount = ref(0)
+const notifLoading = ref(false)
+
+const fetchNotifications = async () => {
+  if (!auth.isLoggedIn) return
+  notifLoading.value = true
+  try {
+    const res = await getNotifications({ page: 1, pageSize: 20 })
+    notifications.value = (res && res.list) || []
+  } catch (e) {
+    notifications.value = []
+  } finally {
+    notifLoading.value = false
+  }
+}
+
+const fetchUnreadCount = async () => {
+  if (!auth.isLoggedIn) return
+  try {
+    const res = await getUnreadCount()
+    unreadCount.value = (res && Number(res.count)) || 0
+  } catch (e) {
+    unreadCount.value = 0
+  }
+}
+
+const toggleNotif = () => {
+  if (!auth.isLoggedIn) return
+  notifOpen.value = !notifOpen.value
+  if (notifOpen.value) fetchNotifications()
+}
+
+const markAllRead = async () => {
+  try {
+    await markAllNotificationsRead()
+    unreadCount.value = 0
+    notifications.value = notifications.value.map((n) => ({ ...n, is_read: 1 }))
+    toast.success('已全部标记为已读')
+  } catch (e) {
+    toast.error(e?.response?.data?.message || '操作失败')
+  }
+}
+
+const notifText = (n) => {
+  const actor = n.actor_name || n.actor_username || '有人'
+  if (n.type === 'follow') return `${actor} 关注了你`
+  if (n.type === 'like') return `${actor} ${n.content || '点赞了你的文章'}`
+  if (n.type === 'favorite') return `${actor} ${n.content || '收藏了你的文章'}`
+  return n.content || ''
+}
+
+const formatNotifTime = (v) => {
+  if (!v) return ''
+  const d = new Date(String(v).replace('T', ' ').replace(/-/g, '/'))
+  const now = Date.now()
+  const diff = Math.floor((now - d.getTime()) / 1000)
+  if (diff < 60) return '刚刚'
+  if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`
+  if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`
+  if (diff < 86400 * 7) return `${Math.floor(diff / 86400)} 天前`
+  return String(v).slice(0, 10)
+}
 
 // ===== 社交媒体（URL 自动识别类型 + 品牌图标） =====
 import {
@@ -90,61 +232,6 @@ function detectSocialType(url) {
 
 // 主页展示（公开）
 const socialsDisplay = computed(() => profile.value?.socials || [])
-// 编辑用
-const socials = ref([])
-const newSocial = reactive({ url: '' })
-const newSocialType = computed(() => detectSocialType(newSocial.url))
-const addSocial = () => {
-  const url = newSocial.url.trim()
-  if (!url) {
-    toast.error('请输入社交链接')
-    return
-  }
-  const type = detectSocialType(url)
-  socials.value.push({ type, url, label: socialLabel(type) })
-  newSocial.url = ''
-}
-const removeSocial = (i) => socials.value.splice(i, 1)
-
-// 上传微信二维码（图片类型）
-const socialQrInput = ref(null)
-const uploadingQr = ref(false)
-const triggerQrUpload = () => {
-  if (socialQrInput.value) socialQrInput.value.click()
-}
-const handleQrFile = async (e) => {
-  const file = e.target.files && e.target.files[0]
-  if (!file) return
-  if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
-    toast.error('仅支持 jpg/png/webp/gif 图片')
-    e.target.value = ''
-    return
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    toast.error('图片不能超过 5MB')
-    e.target.value = ''
-    return
-  }
-  uploadingQr.value = true
-  try {
-    const formData = new FormData()
-    formData.append('image', file)
-    const res = await http.post('/upload/image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    if (res && res.data && res.data.url) {
-      socials.value.push({ type: 'wechat', url: res.data.url, label: '微信', image: true })
-      toast.success('微信二维码已添加')
-    } else {
-      toast.error((res && res.message) || '上传失败')
-    }
-  } catch (err) {
-    toast.error(err?.response?.data?.message || '上传失败')
-  } finally {
-    uploadingQr.value = false
-    e.target.value = ''
-  }
-}
 
 // 点击社交项：图片类型弹二维码大图，否则跳转
 const qrVisible = ref(false)
@@ -157,62 +244,6 @@ const openSocial = (s) => {
   }
   window.open(s.url, '_blank', 'noopener')
 }
-
-// ===== 精选文章（主页自定义展示） =====
-const featuredArticles = ref([]) // 编辑用（文章 id 数组，顺序即展示顺序）
-const myArticles = ref([])
-const featuredLoading = ref(false)
-const fetchMyArticles = async () => {
-  featuredLoading.value = true
-  try {
-    const data = await getBlogArticles(username.value, { page: 1, pageSize: 100 })
-    myArticles.value = (data && data.list) || []
-  } catch (e) {
-    myArticles.value = []
-  } finally {
-    featuredLoading.value = false
-  }
-}
-const articleTitle = (id) =>
-  (myArticles.value.find((a) => Number(a.article_id) === Number(id)) || {}).title || `文章 #${id}`
-const toggleFeatured = (id) => {
-  const nid = Number(id)
-  const i = featuredArticles.value.findIndex((x) => Number(x) === nid)
-  if (i >= 0) featuredArticles.value.splice(i, 1)
-  else featuredArticles.value.push(nid)
-}
-const moveFeatured = (i, dir) => {
-  const j = i + dir
-  if (j < 0 || j >= featuredArticles.value.length) return
-  const tmp = featuredArticles.value[i]
-  featuredArticles.value[i] = featuredArticles.value[j]
-  featuredArticles.value[j] = tmp
-}
-
-// ===== GitHub 绑定 / 解绑 =====
-const isGithubBound = computed(() => !!profile.value?.github_id)
-const bindGithub = () => {
-  const base = http.defaults.baseURL || 'http://127.0.0.1:7000'
-  const redirect = window.location.origin + '/' + username.value
-  const rawToken = String(auth.token || '').replace(/^Bearer\s+/i, '')
-  window.location.href =
-    `${base}/auth/github/bind?redirect=${encodeURIComponent(redirect)}` +
-    `&token=${encodeURIComponent(rawToken)}`
-}
-const unbindGithub = async () => {
-  try {
-    await http.post('/userInfo/unbind-github')
-    toast.success('已解除 GitHub 绑定')
-    await fetchProfile()
-  } catch (e) {
-    toast.error(e?.response?.data?.message || '解绑失败')
-  }
-}
-
-// ===== 编辑资料 =====
-const editVisible = ref(false)
-const editLoading = ref(false)
-const editForm = reactive({ name: '', bio: '', area: '', avatar: '' })
 
 async function fetchProfile() {
   if (!username.value) return
@@ -240,44 +271,6 @@ async function fetchProfile() {
   }
 }
 
-function openEdit() {
-  editForm.name = profile.value?.name || ''
-  editForm.bio = profile.value?.bio || ''
-  editForm.area = profile.value?.area || ''
-  editForm.avatar = profile.value?.avatar || ''
-  socials.value = JSON.parse(JSON.stringify(profile.value?.socials || []))
-  featuredArticles.value = [...(profile.value?.featured_articles || [])]
-  editVisible.value = true
-  fetchMyArticles()
-}
-
-async function submitEdit() {
-  editLoading.value = true
-  try {
-    await updateProfile({
-      id: auth.userId,
-      name: editForm.name,
-      bio: editForm.bio,
-      area: editForm.area,
-      avatar: editForm.avatar,
-      socials: socials.value,
-      featured_articles: featuredArticles.value,
-    })
-    toast.success('资料已更新')
-    editVisible.value = false
-    if (auth.user) {
-      auth.user.name = editForm.name
-      auth.user.bio = editForm.bio
-      auth.user.area = editForm.area
-    }
-    await fetchProfile()
-  } catch (e) {
-    toast.error(e?.response?.data?.message || e.message || '更新失败')
-  } finally {
-    editLoading.value = false
-  }
-}
-
 function logout() {
   auth.logout()
   router.push('/')
@@ -294,53 +287,16 @@ function setFavicon(url) {
   link.href = url
 }
 
-// ===== 头像上传 =====
-const avatarInput = ref(null)
-const uploadingAvatar = ref(false)
-
-function triggerAvatarUpload() {
-  if (avatarInput.value) avatarInput.value.click()
-}
-
-async function handleAvatarFile(e) {
-  const file = e.target.files && e.target.files[0]
-  if (!file) return
-  if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
-    toast.error('仅支持 jpg/png/webp/gif 图片')
-    e.target.value = ''
-    return
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    toast.error('图片不能超过 5MB')
-    e.target.value = ''
-    return
-  }
-  uploadingAvatar.value = true
-  try {
-    const formData = new FormData()
-    formData.append('image', file)
-    const res = await http.post('/upload/image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    if (res && res.data && res.data.url) {
-      editForm.avatar = res.data.url
-      toast.success('头像上传成功')
-    } else {
-      toast.error((res && res.message) || '上传失败')
-    }
-  } catch (err) {
-    toast.error(err?.response?.data?.message || '上传失败')
-  } finally {
-    uploadingAvatar.value = false
-    e.target.value = ''
-  }
-}
-
 watch(username, () => {
   fetchProfile()
+  fetchSocialStats()
 })
 
-onMounted(fetchProfile)
+onMounted(() => {
+  fetchProfile()
+  fetchSocialStats()
+  fetchUnreadCount()
+})
 
 onBeforeUnmount(() => {
   const link = document.querySelector("link[rel='icon']")
@@ -355,11 +311,38 @@ onBeforeUnmount(() => {
       <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
         <RouterLink to="/" class="ghost-btn">← 返回首页</RouterLink>
         <div class="flex items-center gap-2">
-          <template v-if="isSelf">
-            <button class="btn-accent" @click="openEdit">编辑资料</button>
-            <button class="ghost-btn" @click="logout">退出登录</button>
-          </template>
-          <template v-else-if="auth.isLoggedIn">
+          <!-- 通知铃铛（登录后） -->
+          <div v-if="auth.isLoggedIn" class="relative">
+            <button class="ghost-btn relative" aria-label="通知" @click="toggleNotif">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .53-.21 1.04-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+            </button>
+            <!-- 通知下拉 -->
+            <div v-if="notifOpen" class="notif-panel" @click.stop>
+              <div class="notif-panel-head">
+                <span class="font-bold">通知</span>
+                <button v-if="unreadCount > 0" class="notif-read-all" @click="markAllRead">全部已读</button>
+              </div>
+              <div v-if="notifLoading" class="notif-empty">加载中…</div>
+              <div v-else-if="notifications.length" class="notif-list">
+                <RouterLink
+                  v-for="n in notifications"
+                  :key="n.id"
+                  :to="n.article_id ? `/article/${n.article_id}` : `/${n.actor_username}`"
+                  class="notif-item"
+                  :class="{ 'notif-unread': !n.is_read }"
+                  @click="notifOpen = false"
+                >
+                  <span class="min-w-0 flex-1 truncate text-sm">{{ notifText(n) }}</span>
+                  <span class="shrink-0 text-xs text-faint">{{ formatNotifTime(n.created_at) }}</span>
+                </RouterLink>
+              </div>
+              <div v-else class="notif-empty">暂无通知</div>
+            </div>
+          </div>
+          <template v-if="auth.isLoggedIn">
             <button class="ghost-btn" @click="logout">退出登录</button>
           </template>
           <template v-else>
@@ -391,16 +374,6 @@ onBeforeUnmount(() => {
           <div class="hero-avatar-wrap">
             <img v-if="avatar" :src="avatar" :alt="displayName" class="hero-avatar" />
             <span v-else class="hero-avatar hero-monogram">{{ monogram }}</span>
-            <button
-              v-if="isSelf"
-              class="hero-edit-btn"
-              title="编辑头像与资料"
-              @click="openEdit"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
           </div>
 
           <h1 class="hero-name">{{ displayName }}</h1>
@@ -408,6 +381,36 @@ onBeforeUnmount(() => {
             @{{ username }}<span v-if="area" class="hero-username-area"> · {{ area }}</span>
           </p>
           <p v-if="bio" class="hero-bio">{{ bio }}</p>
+
+          <!-- 关注/粉丝/获赞统计 -->
+          <div class="hero-stats">
+            <button class="hero-stat" :disabled="!socialStats.following" @click="openSocialModal('following')">
+              <span class="hero-stat-num">{{ socialStats.following }}</span>
+              <span class="hero-stat-label">关注</span>
+            </button>
+            <button class="hero-stat" :disabled="!socialStats.followers" @click="openSocialModal('followers')">
+              <span class="hero-stat-num">{{ socialStats.followers }}</span>
+              <span class="hero-stat-label">粉丝</span>
+            </button>
+            <span class="hero-stat">
+              <span class="hero-stat-num">{{ socialStats.liked }}</span>
+              <span class="hero-stat-label">获赞</span>
+            </span>
+          </div>
+
+          <!-- 关注按钮 / 我的收藏（本人） -->
+          <div v-if="isSelf" class="hero-actions">
+            <RouterLink to="/me/favorites" class="hero-btn-ghost">☆ 我的收藏</RouterLink>
+          </div>
+          <div v-else class="hero-actions">
+            <button
+              class="hero-btn"
+              :class="socialStats.isFollowing ? 'hero-btn-following' : ''"
+              @click="doFollow"
+            >
+              {{ socialStats.isFollowing ? '已关注' : '+ 关注' }}
+            </button>
+          </div>
 
           <!-- 社交链接 -->
           <div v-if="socialsDisplay.length" class="hero-socials">
@@ -459,133 +462,48 @@ onBeforeUnmount(() => {
     </main>
 
     <!-- 底部注册引导（仅对访客展示） -->
-    <footer v-if="!isSelf" class="mx-auto max-w-5xl px-4 pb-10 pt-2 text-center">
+    <footer v-if="!isSelf" class="mx-auto max-w-5xl px-4 pb-6 pt-2 text-center">
       <p class="text-sm text-muted">
         你也想创建你的博客？
         <RouterLink to="/register" class="font-medium text-accent hover:text-accent-strong">请注册JScreate吧~</RouterLink>
       </p>
     </footer>
 
-    <!-- 编辑资料弹窗 -->
+    <SiteFooter />
+
+    <!-- 关注/粉丝列表弹窗 -->
     <div
-      v-if="editVisible"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      @click.self="editVisible = false"
+      v-if="socialModal"
+      class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+      @click.self="socialModal = false"
     >
-      <div class="w-full max-w-lg rounded-card border border-line bg-card p-6 max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-bold text-ink">编辑个人资料</h3>
-        <div class="mt-4 space-y-4">
-          <div>
-            <label class="mb-1 block text-sm text-muted">头像</label>
-            <div class="flex items-center gap-2">
-              <input v-model="editForm.avatar" class="input" placeholder="粘贴图片链接或上传" />
-              <button class="ghost-btn shrink-0" type="button" :disabled="uploadingAvatar" @click="triggerAvatarUpload">
-                {{ uploadingAvatar ? '上传中…' : '上传' }}
-              </button>
-            </div>
-            <input
-              ref="avatarInput"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              class="hidden"
-              @change="handleAvatarFile"
-            />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm text-muted">昵称</label>
-            <input v-model="editForm.name" class="input" placeholder="你的昵称/姓名" />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm text-muted">简介</label>
-            <textarea v-model="editForm.bio" class="input" rows="2" placeholder="介绍一下自己"></textarea>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm text-muted">地区</label>
-            <input v-model="editForm.area" class="input" placeholder="如：湖南长沙" />
-          </div>
-
-          <!-- 社交媒体 -->
-          <div class="border-t border-line pt-4">
-            <label class="mb-2 block text-sm font-semibold text-ink">社交媒体</label>
-            <div v-if="socials.length" class="mb-2 space-y-1.5">
-              <div v-for="(s, i) in socials" :key="i" class="flex items-center gap-2">
-                <span class="social-badge">
-                  <svg viewBox="0 0 24 24" class="social-badge-svg"><path :d="socialIconPath(s.type)" fill="currentColor" /></svg>
-                </span>
-                <span class="flex-1 truncate text-sm">{{ socialLabel(s.type) }} · <span class="text-faint">{{ s.url }}</span></span>
-                <button class="ghost-btn" type="button" @click="removeSocial(i)">删除</button>
-              </div>
-            </div>
-            <p v-else class="mb-2 text-xs text-faint">还没有添加社交链接</p>
-            <div class="flex items-center gap-2">
-              <input v-model="newSocial.url" class="input" placeholder="链接地址（自动识别：GitHub/微信/QQ/Telegram/力扣/npm…）" />
-              <button class="ghost-btn shrink-0" type="button" @click="addSocial">添加</button>
-            </div>
-            <p v-if="newSocial.url" class="mt-1 text-xs text-faint">
-              识别为：
-              <span class="inline-flex items-center gap-1 text-ink">
-                <svg viewBox="0 0 24 24" class="social-badge-svg"><path :d="socialIconPath(newSocialType)" fill="currentColor" /></svg>
-                {{ socialLabel(newSocialType) }}
-              </span>
-            </p>
-            <div class="mt-2 flex items-center gap-2">
-              <button class="ghost-btn shrink-0" type="button" :disabled="uploadingQr" @click="triggerQrUpload">
-                {{ uploadingQr ? '上传中…' : '上传微信二维码' }}
-              </button>
-              <span class="text-xs text-faint">或上传二维码图片（作为微信）</span>
-              <input
-                ref="socialQrInput"
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                class="hidden"
-                @change="handleQrFile"
-              />
-            </div>
-          </div>
-
-          <!-- 精选文章 -->
-          <div class="border-t border-line pt-4">
-            <label class="mb-2 block text-sm font-semibold text-ink">精选文章（主页展示，可排序）</label>
-            <div v-if="featuredArticles.length" class="mb-2 space-y-1">
-              <div v-for="(id, i) in featuredArticles" :key="id" class="flex items-center gap-2">
-                <span class="flex-1 truncate text-sm">{{ articleTitle(id) }}</span>
-                <button class="ghost-btn" type="button" :disabled="i === 0" @click="moveFeatured(i, -1)">↑</button>
-                <button class="ghost-btn" type="button" :disabled="i === featuredArticles.length - 1" @click="moveFeatured(i, 1)">↓</button>
-                <button class="ghost-btn" type="button" @click="toggleFeatured(id)">移除</button>
-              </div>
-            </div>
-            <div v-if="myArticles.length" class="max-h-40 overflow-y-auto rounded-tag border border-line p-2">
-              <label v-for="a in myArticles" :key="a.article_id" class="flex cursor-pointer items-center gap-2 py-0.5 text-sm">
-                <input
-                  type="checkbox"
-                  :checked="featuredArticles.includes(Number(a.article_id))"
-                  @change="toggleFeatured(a.article_id)"
-                />
-                <span class="truncate">{{ a.title }}</span>
-              </label>
-            </div>
-            <p v-else-if="!featuredLoading" class="text-xs text-faint">还没有可精选的文章</p>
-          </div>
-
-          <!-- GitHub 绑定 -->
-          <div class="border-t border-line pt-4">
-            <label class="mb-2 block text-sm font-semibold text-ink">GitHub 绑定</label>
-            <div v-if="isGithubBound" class="flex items-center gap-2">
-              <span class="flex-1 text-sm">已绑定 GitHub（#{{ profile?.github_id }}）</span>
-              <button class="ghost-btn" type="button" @click="unbindGithub">取消绑定</button>
-            </div>
-            <div v-else>
-              <button class="ghost-btn" type="button" @click="bindGithub">绑定 GitHub</button>
-            </div>
-          </div>
+      <div class="w-full max-w-md rounded-card border border-line bg-card p-5 max-h-[80vh] overflow-y-auto">
+        <div class="mb-3 flex items-center justify-between">
+          <h3 class="text-lg font-bold text-ink">{{ socialModalMode === 'following' ? '关注' : '粉丝' }}</h3>
+          <button class="ghost-btn" @click="socialModal = false">关闭</button>
         </div>
-
-        <div class="mt-6 flex justify-end gap-2">
-          <button class="ghost-btn" @click="editVisible = false">取消</button>
-          <button class="btn-accent" :disabled="editLoading" @click="submitEdit">
-            {{ editLoading ? '保存中…' : '保存' }}
-          </button>
+        <p v-if="socialModalLoading" class="py-8 text-center text-faint">加载中…</p>
+        <div v-else-if="(socialModalMode === 'following' ? followingList : followersList).length" class="space-y-2">
+          <RouterLink
+            v-for="u in (socialModalMode === 'following' ? followingList : followersList)"
+            :key="u.id"
+            :to="`/${u.username}`"
+            class="flex items-center gap-3 rounded-tag border border-line p-2.5 transition hover:border-accent"
+            @click="socialModal = false"
+          >
+            <span v-if="u.avatar" class="h-10 w-10 shrink-0 overflow-hidden rounded-full">
+              <img :src="u.avatar" :alt="u.name || u.username" class="h-full w-full object-cover" />
+            </span>
+            <span v-else class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-base font-bold text-on-accent">
+              {{ (u.name || u.username || '?').charAt(0).toUpperCase() }}
+            </span>
+            <span class="min-w-0">
+              <span class="block truncate text-sm font-bold text-ink">{{ u.name || u.username }}</span>
+              <span class="block truncate text-xs text-faint">@{{ u.username }}</span>
+            </span>
+          </RouterLink>
         </div>
+        <p v-else class="py-8 text-center text-faint">还没有{{ socialModalMode === 'following' ? '关注' : '粉丝' }}</p>
       </div>
     </div>
 
@@ -748,26 +666,6 @@ onBeforeUnmount(() => {
   font-weight: 800;
   color: #34495e;
 }
-.hero-edit-btn {
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: none;
-  background-color: #fff;
-  color: #34495e;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  transition: transform 0.2s ease;
-}
-.hero-edit-btn:hover {
-  transform: scale(1.1);
-}
 
 .hero-name {
   margin-top: 18px;
@@ -879,20 +777,151 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
-/* 编辑弹窗内社交徽标 */
-.social-badge {
-  display: inline-flex;
-  align-items: center;
+/* ---- 关注/粉丝/获赞统计 ---- */
+.hero-stats {
+  margin-top: 14px;
+  display: flex;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background-color: var(--color-accent);
-  color: var(--color-on-accent);
-  flex-shrink: 0;
+  gap: 22px;
+  position: relative;
+  z-index: 1;
 }
-.social-badge-svg {
-  width: 14px;
-  height: 14px;
+.hero-stat {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.hero-stat:disabled {
+  cursor: default;
+}
+.hero-stat-num {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.hero-stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* ---- 关注按钮 / 我的收藏 ---- */
+.hero-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+.hero-btn {
+  padding: 8px 26px;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  color: #2c3e50;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.hero-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+.hero-btn-following {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  box-shadow: none;
+}
+.hero-btn-ghost {
+  padding: 8px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+.hero-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ---- 通知铃铛与下拉 ---- */
+.notif-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 17px;
+  text-align: center;
+}
+.notif-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  width: 320px;
+  max-height: 420px;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  z-index: 60;
+  overflow: hidden;
+}
+.notif-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-line);
+  font-size: 14px;
+  color: var(--color-ink);
+}
+.notif-read-all {
+  font-size: 12px;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.notif-list {
+  overflow-y: auto;
+}
+.notif-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-body);
+  text-decoration: none;
+}
+.notif-item:hover {
+  background: color-mix(in oklab, var(--color-accent) 6%, transparent);
+}
+.notif-unread {
+  background: color-mix(in oklab, var(--color-accent) 8%, transparent);
+}
+.notif-empty {
+  padding: 24px 14px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-faint);
 }
 </style>

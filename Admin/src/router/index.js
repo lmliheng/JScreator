@@ -70,6 +70,17 @@ const Routes = [
 
                     },
                     {
+                        path: '/user/home-setting',
+                        name: 'home-setting',
+                        component: () => import('../views/privateViews/HomeSetting.vue'),
+                        meta: {
+                            title: '主页设置',
+                            icon: 'home-setting',
+                            private: true,
+                            roles: [1, 2, 3], // admin 可设置所有人；普通用户设置自己
+                        },
+                    },
+                    {
                         path: '/user/role-manage',
                         name: 'role-manage',
                         component: RoleManage,
@@ -158,6 +169,17 @@ const Routes = [
                             roles: [1, 2, 3], // admin + editor + 普通用户（自己的文章）
                         }
                     },
+                    {
+                        path: '/article/interaction-manage',
+                        name: 'interaction-manage',
+                        component: () => import('../views/privateViews/InteractionManage.vue'),
+                        meta: {
+                            title: '互动管理',
+                            icon: 'interaction-manage',
+                            private: true,
+                            roles: [1], // 仅 admin（点赞/收藏记录）
+                        }
+                    },
                 ]
             },
             {
@@ -167,6 +189,28 @@ const Routes = [
                 meta: {
                     title: '系统监控',
                     icon: 'system-monitor',
+                    private: true,
+                    roles: [1], // 仅 admin
+                }
+            },
+            {
+                path: '/system/ad-manage',
+                name: 'ad-manage',
+                component: () => import('../views/privateViews/AdManage.vue'),
+                meta: {
+                    title: '广告管理',
+                    icon: 'ad-manage',
+                    private: true,
+                    roles: [1], // 仅 admin
+                }
+            },
+            {
+                path: '/system/announcement-manage',
+                name: 'announcement-manage',
+                component: () => import('../views/privateViews/AnnouncementManage.vue'),
+                meta: {
+                    title: '公告管理',
+                    icon: 'announcement-manage',
                     private: true,
                     roles: [1], // 仅 admin
                 }

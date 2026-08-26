@@ -189,9 +189,77 @@ const getUserList = async (page = 1, pageSize = 24) => {
     }
 }
 
+/**
+ * 全站最新已发布文章（首页「最新文章流」）
+ * @param {number} [limit=6]
+ * @returns {Promise<object[]>} 带作者信息/分类的文章数组
+ */
+const getLatestArticles = async (limit = 6) => {
+    limit = parseInt(limit, 10) || 6
+    if (limit < 1) limit = 6
+    try {
+        const sql = `
+            SELECT a.article_id, a.title, a.content, a.status, a.user AS user_id,
+                   u.username AS author_name, u.name AS author_nick, u.avatar AS author_avatar,
+                   a.created_at, a.updated_at,
+                   GROUP_CONCAT(DISTINCT ac.category_id ORDER BY ac.category_id ASC) AS category_ids,
+                   GROUP_CONCAT(DISTINCT ac.category_name ORDER BY ac.category_id ASC) AS category_names
+            FROM article a
+            JOIN user u ON a.user = u.id
+            LEFT JOIN articleandcategory_middle acm ON acm.article_id = a.article_id
+            LEFT JOIN article_category ac ON ac.category_id = acm.category_id
+            WHERE a.status = 1
+            GROUP BY a.article_id, a.title, a.content, a.status, a.user, u.username, u.name, u.avatar, a.created_at, a.updated_at
+            ORDER BY a.created_at DESC
+            LIMIT ?
+        `
+        const [rows] = await pool.query(sql, [limit])
+        return rows.map(attachCategoryArrays)
+    } catch (error) {
+        console.error('查询全站最新文章错误:', error)
+        throw error
+    }
+}
+
+/**
+ * 全站热议文章（按评论数排序，首页「热门文章榜」）
+ * @param {number} [limit=6]
+ * @returns {Promise<object[]>} 带 comment_count 的文章数组
+ */
+const getHotArticles = async (limit = 6) => {
+    limit = parseInt(limit, 10) || 6
+    if (limit < 1) limit = 6
+    try {
+        const sql = `
+            SELECT a.article_id, a.title, a.content, a.status, a.user AS user_id,
+                   u.username AS author_name, u.name AS author_nick, u.avatar AS author_avatar,
+                   a.created_at, a.updated_at,
+                   COUNT(DISTINCT c.comment_id) AS comment_count,
+                   GROUP_CONCAT(DISTINCT ac.category_id ORDER BY ac.category_id ASC) AS category_ids,
+                   GROUP_CONCAT(DISTINCT ac.category_name ORDER BY ac.category_id ASC) AS category_names
+            FROM article a
+            JOIN user u ON a.user = u.id
+            LEFT JOIN comment c ON c.article_id = a.article_id
+            LEFT JOIN articleandcategory_middle acm ON acm.article_id = a.article_id
+            LEFT JOIN article_category ac ON ac.category_id = acm.category_id
+            WHERE a.status = 1
+            GROUP BY a.article_id, a.title, a.content, a.status, a.user, u.username, u.name, u.avatar, a.created_at, a.updated_at
+            ORDER BY comment_count DESC, a.created_at DESC
+            LIMIT ?
+        `
+        const [rows] = await pool.query(sql, [limit])
+        return rows.map(attachCategoryArrays)
+    } catch (error) {
+        console.error('查询热议文章错误:', error)
+        throw error
+    }
+}
+
 module.exports = {
     getUserPublicByUsername,
     getArticlesByUsername,
     getUserList,
     getArticlesByIds,
+    getLatestArticles,
+    getHotArticles,
 }

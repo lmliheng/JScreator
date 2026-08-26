@@ -287,6 +287,16 @@ watch(isAdminOrEditor, () => {
                     </el-tag>
                 </template>
             </el-table-column>
+            <el-table-column align="center" label="点赞" width="80">
+                <template #default="scope">
+                    <span>{{ scope.row.like_count || 0 }}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" label="收藏" width="80">
+                <template #default="scope">
+                    <span>{{ scope.row.favorite_count || 0 }}</span>
+                </template>
+            </el-table-column>
             <el-table-column align="center" label="创建时间" width="180">
                 <template #default="scope">
                     {{ formatTime(scope.row.created_at) }}

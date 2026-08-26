@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownCom from '@/components/MarkdownCom.vue'
 import { ElMessage } from 'element-plus'
@@ -37,12 +37,14 @@ const statusOptions = [
     { value: 2, label: '仅自己可见' }
 ]
 
+// 全屏书写状态
+const fullscreen = ref(false)
+
 const getCategories = async () => {
     try {
         const res = await requestArticleCategoryList()
         categoryList.value = res.data?.list || []
     } catch (e) {
-        // 分类加载失败不阻塞编辑
         console.error(e)
     }
 }
@@ -100,63 +102,118 @@ const handleBack = () => {
     router.push('/article/article-manage')
 }
 
+const onFullscreenChange = (v) => {
+    fullscreen.value = v
+}
+
+// 全屏时 Esc 退出（父组件统一处理，避免子组件实例状态不一致）
+const handleGlobalEsc = (e) => {
+    if (e.key === 'Escape' && fullscreen.value) {
+        fullscreen.value = false
+    }
+}
+
 onMounted(() => {
     getCategories()
     getDetail()
+    window.addEventListener('keydown', handleGlobalEsc)
+})
+
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', handleGlobalEsc)
 })
 </script>
 
 <template>
     <div v-loading="loading">
-        <div class="article-create-header">
-            <span class="page-title">{{ isEdit ? '编辑文章' : '写文章' }}</span>
-            <el-button @click="handleBack">返回列表</el-button>
-        </div>
+        <!-- ================= 普通模式：左右分栏 ================= -->
+        <template v-if="!fullscreen">
+            <div class="article-create-header">
+                <span class="page-title">{{ isEdit ? '编辑文章' : '写文章' }}</span>
+                <el-button @click="handleBack">返回列表</el-button>
+            </div>
 
-        <el-form :model="form" label-width="80px">
-            <el-form-item label="标题" required>
+            <div class="create-layout">
+                <!-- 左侧：标题 + 编辑器 -->
+                <div class="create-main">
+                    <el-input
+                        v-model="form.title"
+                        placeholder="请输入文章标题"
+                        maxlength="200"
+                        show-word-limit
+                        size="large"
+                        class="title-input"
+                    />
+                    <MarkdownCom v-model="form.content" height="70vh" @fullscreen-change="onFullscreenChange" />
+                </div>
+
+                <!-- 右侧：属性栏（可折叠） -->
+                <div class="create-side">
+                    <el-card shadow="never" class="side-card">
+                        <template #header>
+                            <span class="side-title">文章属性</span>
+                        </template>
+                        <div class="side-field">
+                            <div class="side-label">分类</div>
+                            <el-select
+                                v-model="form.category_ids"
+                                multiple
+                                clearable
+                                collapse-tags
+                                placeholder="选择分类"
+                                style="width: 100%"
+                            >
+                                <el-option
+                                    v-for="c in categoryList"
+                                    :key="c.category_id"
+                                    :label="c.category_name"
+                                    :value="c.category_id"
+                                />
+                            </el-select>
+                        </div>
+                        <div class="side-field">
+                            <div class="side-label">状态</div>
+                            <el-radio-group v-model="form.status">
+                                <el-radio v-for="s in statusOptions" :key="s.value" :value="s.value">
+                                    {{ s.label }}
+                                </el-radio>
+                            </el-radio-group>
+                        </div>
+                        <div class="side-actions">
+                            <el-button type="primary" style="width: 100%" size="large" :loading="submitting" @click="handleSubmit">
+                                {{ isEdit ? '保存修改' : '发布' }}
+                            </el-button>
+                            <el-button style="width: 100%" @click="handleBack">保存草稿返回</el-button>
+                        </div>
+                    </el-card>
+                </div>
+            </div>
+        </template>
+
+        <!-- ================= 全屏书写模式 ================= -->
+        <div v-else class="fs-overlay">
+            <!-- 全屏顶部工具条 -->
+            <div class="fs-toolbar">
+                <el-button size="small" @click="handleBack">← 返回</el-button>
                 <el-input
                     v-model="form.title"
                     placeholder="请输入文章标题"
                     maxlength="200"
-                    show-word-limit
+                    class="fs-title"
                 />
-            </el-form-item>
-
-            <el-form-item label="分类">
-                <el-select
-                    v-model="form.category_ids"
-                    multiple
-                    clearable
-                    placeholder="请选择分类（可多选）"
-                    style="width: 100%"
-                >
-                    <el-option
-                        v-for="c in categoryList"
-                        :key="c.category_id"
-                        :label="c.category_name"
-                        :value="c.category_id"
-                    />
-                </el-select>
-            </el-form-item>
-
-            <el-form-item label="状态">
-                <el-radio-group v-model="form.status">
-                    <el-radio v-for="s in statusOptions" :key="s.value" :value="s.value">
-                        {{ s.label }}
-                    </el-radio>
-                </el-radio-group>
-            </el-form-item>
-
-            <el-form-item label="内容" required>
-                <MarkdownCom v-model="form.content" />
-            </el-form-item>
-        </el-form>
-
-        <div class="article-create-footer">
-            <el-button type="primary" size="large" :loading="submitting" @click="handleSubmit">
-                {{ isEdit ? '保存修改' : '提交' }}
-            </el-button>
+                <el-button type="primary" :loading="submitting" @click="handleSubmit">
+                    {{ isEdit ? '保存修改' : '发布' }}
+                </el-button>
+                <el-button size="small" @click="fullscreen = false">退出全屏</el-button>
+            </div>
+            <!-- 全屏编辑器（铺满剩余高度，左编辑右预览） -->
+            <div class="fs-editor">
+                <MarkdownCom
+                    v-model="form.content"
+                    height="calc(100vh - 56px)"
+                    @fullscreen-change="onFullscreenChange"
+                />
+            </div>
         </div>
     </div>
 </template>
@@ -174,8 +231,70 @@ onMounted(() => {
     font-weight: bold;
 }
 
-.article-create-footer {
-    text-align: right;
-    margin-top: 8px;
+/* ---- 左右分栏 ---- */
+.create-layout {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+.create-main {
+    flex: 1;
+    min-width: 0;
+}
+.create-side {
+    width: 280px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 16px;
+}
+.title-input {
+    margin-bottom: 14px;
+}
+.side-card {
+    border-radius: 8px;
+}
+.side-title {
+    font-weight: 600;
+}
+.side-field {
+    margin-bottom: 16px;
+}
+.side-label {
+    font-size: 13px;
+    color: #909399;
+    margin-bottom: 6px;
+}
+.side-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+/* ---- 全屏模式 ---- */
+.fs-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+}
+.fs-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #e4e7ed;
+    background: #fafafa;
+}
+.fs-title {
+    flex: 1;
+}
+.fs-editor {
+    flex: 1;
+    min-height: 0;
+    padding: 14px 16px;
+    overflow: hidden;
 }
 </style>

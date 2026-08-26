@@ -134,8 +134,11 @@ router.get('/sys/profile', async (req, res) => {
     }
 })
 
-// 更新用户基本信息（本人，id/username/email + 社交/精选文章）
+// 更新用户基本信息（登录用户改自己；管理员可改任意用户全部字段）
 router.put('/userInfo', async (req, res) => {
+    const login_id = await requireLogin(req, res)
+    if (login_id === null) return
+
     const { id, username, email, bio, vip, checkinDay, name, area, avatar, socials, featured_articles } = req.body
     if (!id) {
         return res.status(400).json({
@@ -143,6 +146,17 @@ router.put('/userInfo', async (req, res) => {
             success: false,
             message: '用户id不能为空'
         })
+    }
+    // 权限：本人可改自己；管理员（role_id=1）可改任意用户
+    if (Number(id) !== Number(login_id)) {
+        const check_role = await role_getById(login_id)
+        if (!check_role || check_role.role_id !== 1) {
+            return res.status(403).json({
+                code: 403,
+                success: false,
+                message: '权限不足，仅可修改自己的主页设置'
+            })
+        }
     }
     try {
         await user_updateProfile(id, { username, email, bio, vip, checkinDay, name, area, avatar, socials, featured_articles })

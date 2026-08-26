@@ -93,9 +93,7 @@ const handleAvatarFile = async (e) => {
     try {
         const formData = new FormData()
         formData.append('image', file)
-        const res = await api.post('/upload/image', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        })
+        const res = await api.post('/upload/image', formData)
         if (res && res.data && res.data.url) {
             editForm.avatar = res.data.url
             ElMessage.success('头像上传成功')
