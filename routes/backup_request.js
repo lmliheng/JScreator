@@ -78,7 +78,19 @@ router.get('/backup/download', async (req, res) => {
             sql = typeof result === 'string' ? result : JSON.stringify(result)
         }
         // 字符集兼容：0900 → general_ci（云 MySQL 5.7 不认 0900）
-        const replaced = sql.replace(/utf8mb4_0900_ai_ci/g, 'utf8mb4_general_ci')
+        sql = sql.replace(/utf8mb4_0900_ai_ci/g, 'utf8mb4_general_ci')
+
+        // 关键修复：mysqldump 包按表名字母序导出，外键引用的表可能晚于引用者创建，
+        // 必须禁用外键检查，否则导入时报 ERROR 1215 (Cannot add foreign key constraint)。
+        // （官方 mysqldump 同样用 FOREIGN_KEY_CHECKS=0 解决表顺序问题）
+        const head = [
+            '-- JScreator 数据库备份（结构 + 数据，兼容 MySQL 5.7）',
+            'SET NAMES utf8mb4;',
+            'SET FOREIGN_KEY_CHECKS = 0;',
+            '',
+        ].join('\n')
+        const tail = '\nSET FOREIGN_KEY_CHECKS = 1;\n'
+        const replaced = head + sql.replace(/^--[\s\S]*?--\s*$/m, '') + tail
 
         const readme = [
             `JScreator 数据库备份`,
