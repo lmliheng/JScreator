@@ -80,9 +80,14 @@ router.get('/backup/download', async (req, res) => {
         // 字符集兼容：0900 → general_ci（云 MySQL 5.7 不认 0900）
         sql = sql.replace(/utf8mb4_0900_ai_ci/g, 'utf8mb4_general_ci')
 
-        // 关键修复：mysqldump 包按表名字母序导出，外键引用的表可能晚于引用者创建，
+        // 关键修复1：mysqldump 包按表名字母序导出，外键引用的表可能晚于引用者创建，
         // 必须禁用外键检查，否则导入时报 ERROR 1215 (Cannot add foreign key constraint)。
-        // （官方 mysqldump 同样用 FOREIGN_KEY_CHECKS=0 解决表顺序问题）
+        // 关键修复2：每个 CREATE TABLE 前插入 DROP TABLE IF EXISTS（先删后建），
+        // 使备份可重复导入——目标库有残留数据也不报 ERROR 1062 (Duplicate entry)。
+        // （官方 mysqldump 同样用 FOREIGN_KEY_CHECKS=0 + DROP TABLE 处理）
+        sql = sql.replace(/CREATE TABLE IF NOT EXISTS `([^`]+)`/g, (m, name) => {
+            return 'DROP TABLE IF EXISTS `' + name + '`;\n' + m
+        })
         const head = [
             '-- JScreator 数据库备份（结构 + 数据，兼容 MySQL 5.7）',
             'SET NAMES utf8mb4;',
@@ -98,7 +103,8 @@ router.get('/backup/download', async (req, res) => {
             `数据库：${dbName}`,
             `导出时间：${new Date().toLocaleString()}`,
             `内容：全部表结构 + 数据（兼容 MySQL 5.7，utf8mb4_general_ci）`,
-            `说明：导入前请确认目标库为空或可覆盖；含敏感数据请妥善保管。`,
+            `特性：先 DROP 后 CREATE（可重复导入，不挑目标库状态）+ 禁用外键检查（规避表顺序问题）`,
+            `注意：含敏感数据请妥善保管。`,
             ``,
         ].join('\n')
 

@@ -23,11 +23,25 @@ const routes = [
     meta: { layout: 'blank' },
   },
   {
+    path: '/docs/mcp',
+    name: 'docs-mcp',
+    component: () => import('@/views/DocsMcpView.vue'),
+    // MCP/开放 API 调用文档（公开）：全宽无侧边栏
+    meta: { layout: 'blank' },
+  },
+  {
     path: '/me/favorites',
     name: 'my-favorites',
     component: () => import('@/views/FavoritesView.vue'),
     // 我的收藏：全宽无侧边栏
     meta: { layout: 'blank' },
+  },
+  {
+    path: '/assistant',
+    name: 'assistant',
+    component: () => import('@/views/AssistantView.vue'),
+    // 消息中心（AI Agent + 私信）：全宽无侧边栏
+    meta: { layout: 'blank', requiresAuth: true },
   },
   {
     path: '/article/:id',

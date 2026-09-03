@@ -27,7 +27,9 @@
         "mysqldump": "^3.2.0",
         "nodemailer": "^9.0.5",
         "nodemon": "^3.1.2",
-        "openai": "^6.36.0"
+        "openai": "^6.36.0",
+        "otplib": "^12.0.1",
+        "ws": "^8.21.3"
     },
     "devDependencies": {
         "rollup": "^4.62.5"

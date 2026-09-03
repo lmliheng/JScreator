@@ -92,6 +92,7 @@ onMounted(fetchAll)
           <RouterLink to="/" class="hero-nav-link" active-class="hero-nav-active" exact-active-class="hero-nav-active">首页</RouterLink>
           <RouterLink to="/archive" class="hero-nav-link">归档</RouterLink>
           <RouterLink to="/search" class="hero-nav-link">搜索</RouterLink>
+          <RouterLink to="/docs/mcp" class="hero-nav-link">API 文档</RouterLink>
         </nav>
         <div class="flex items-center gap-2">
           <template v-if="auth.isLoggedIn">

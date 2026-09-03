@@ -3,14 +3,14 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
-import { sendEmailCode, emailLogin } from '@/api/auth'
+import { sendEmailCode, emailLogin, totpLogin } from '@/api/auth'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const toast = useToastStore()
 
-const mode = ref('password') // 'password' | 'email'
+const mode = ref('password') // 'password' | 'email' | 'totp'
 
 // 密码登录
 const account = ref('')
@@ -24,6 +24,11 @@ const emailLoading = ref(false)
 const sending = ref(false)
 const countdown = ref(0)
 let sendTimer = null
+
+// TOTP 登录
+const totpAccount = ref('')
+const totpCode = ref('')
+const totpLoading = ref(false)
 
 const expired = ref(route.query.expired === '1')
 
@@ -85,6 +90,26 @@ async function submitEmail() {
   }
 }
 
+// TOTP 直接登录
+async function submitTotp() {
+  if (!totpAccount.value.trim() || !totpCode.value.trim()) {
+    toast.error('请输入账号和动态码')
+    return
+  }
+  totpLoading.value = true
+  try {
+    const { token, user } = await totpLogin(totpAccount.value.trim(), totpCode.value.trim())
+    auth.setSession(token, user)
+    toast.success('登录成功')
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+    router.push(redirect)
+  } catch (e) {
+    toast.error(e.message || '登录失败')
+  } finally {
+    totpLoading.value = false
+  }
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:7000'
 
 function githubLogin() {
@@ -132,6 +157,12 @@ onBeforeUnmount(() => {
           :class="mode === 'email' ? 'bg-card text-ink shadow-sm' : 'text-muted'"
           @click="mode = 'email'"
         >邮箱登录</button>
+        <button
+          type="button"
+          class="flex-1 rounded-tag px-3 py-1.5 text-sm font-medium"
+          :class="mode === 'totp' ? 'bg-card text-ink shadow-sm' : 'text-muted'"
+          @click="mode = 'totp'"
+        >TOTP</button>
       </div>
 
       <!-- 密码登录 -->
@@ -150,7 +181,7 @@ onBeforeUnmount(() => {
       </form>
 
       <!-- 邮箱验证码登录 -->
-      <form v-else class="mt-6 space-y-4" @submit.prevent="submitEmail">
+      <form v-else-if="mode === 'email'" class="mt-6 space-y-4" @submit.prevent="submitEmail">
         <div>
           <label class="field-label" for="email">邮箱</label>
           <input id="email" v-model="email" type="email" autocomplete="email" class="input" placeholder="you@example.com" />
@@ -172,6 +203,22 @@ onBeforeUnmount(() => {
         <button type="submit" class="btn-accent w-full disabled:opacity-60" :disabled="emailLoading">
           {{ emailLoading ? '登录中…' : '登录' }}
         </button>
+      </form>
+
+      <!-- TOTP 登录 -->
+      <form v-else class="mt-6 space-y-4" @submit.prevent="submitTotp">
+        <div>
+          <label class="field-label" for="totp-account">用户名 / 邮箱</label>
+          <input id="totp-account" v-model="totpAccount" type="text" autocomplete="username" class="input" placeholder="已绑定 TOTP 的账号" />
+        </div>
+        <div>
+          <label class="field-label" for="totp-code">动态码</label>
+          <input id="totp-code" v-model="totpCode" type="text" inputmode="numeric" maxlength="6" class="input" placeholder="输入 Authenticator 上的 6 位数字" />
+        </div>
+        <button type="submit" class="btn-accent w-full disabled:opacity-60" :disabled="totpLoading">
+          {{ totpLoading ? '验证中…' : 'TOTP 登录' }}
+        </button>
+        <p class="text-center text-xs text-faint">首次使用？登录后到个人主页绑定 Google Authenticator</p>
       </form>
 
       <div class="my-4 flex items-center gap-3 text-xs text-faint">

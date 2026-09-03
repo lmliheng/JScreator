@@ -79,6 +79,12 @@ onMounted(() => {
       <template #title>{{ $t('home_setting') }}</template>
     </el-menu-item>
 
+    <!-- API Keys：所有登录用户可管理自己的外部接口 Key -->
+    <el-menu-item index="/system/api-key-manage">
+      <el-icon><Operation /></el-icon>
+      <template #title>{{ $t('api_key_manage') }}</template>
+    </el-menu-item>
+
     <el-sub-menu index="3">
       <template #title>
        <el-icon><Notebook /></el-icon>
@@ -111,6 +117,11 @@ onMounted(() => {
     <el-menu-item v-if="isAdmin" index="/system/announcement-manage">
       <el-icon><Monitor /></el-icon>
       <template #title>{{ $t('announcement_manage') }}</template>
+    </el-menu-item>
+
+    <el-menu-item v-if="isAdmin" index="/system/oauth-manage">
+      <el-icon><Monitor /></el-icon>
+      <template #title>{{ $t('oauth_manage') }}</template>
     </el-menu-item>
   </el-menu>
 </template>

@@ -58,6 +58,11 @@ app.use(require('./routes/social_request'))
 app.use(require('./routes/ad_request'))
 app.use(require('./routes/announcement_request'))
 app.use(require('./routes/backup_request'))
+app.use(require('./routes/api_key_request').router)
+app.use(require('./routes/open_api'))
+app.use(require('./routes/totp_request'))
+app.use(require('./routes/oauth_request'))
+app.use(require('./routes/dm_request'))
 
 // 路由全部挂载后，登记全部接口清单（系统监控的接口统计显示所有接口，未调用的为 0 次）
 const { registerRoutes } = require('./utils/api_monitor');
@@ -66,7 +71,15 @@ registerRoutes(app);
 
 async function startServer() {
   const PORT = process.env.PORT || 7000;
-  app.listen(PORT, () => {
+  // 用 http.Server 承载 Express，以便 WebSocket 挂同一端口
+  const http = require('http');
+  const server = http.createServer(app);
+
+  // WebSocket 实时服务（Agent 对话 + 用户私信）
+  const { initWsServer } = require('./utils/ws_server');
+  initWsServer(server);
+
+  server.listen(PORT, () => {
     console.log(`服务器运行在端口 ${PORT}`);
   });
 }

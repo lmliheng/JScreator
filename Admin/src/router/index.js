@@ -214,6 +214,28 @@ const Routes = [
                     private: true,
                     roles: [1], // 仅 admin
                 }
+            },
+            {
+                path: '/system/api-key-manage',
+                name: 'api-key-manage',
+                component: () => import('../views/privateViews/ApiKeyManage.vue'),
+                meta: {
+                    title: 'API Keys',
+                    icon: 'api-key-manage',
+                    private: true,
+                    roles: [1, 2, 3], // 所有登录用户可管理自己的 key
+                }
+            },
+            {
+                path: '/system/oauth-manage',
+                name: 'oauth-manage',
+                component: () => import('../views/privateViews/OAuthClientManage.vue'),
+                meta: {
+                    title: 'OAuth 应用',
+                    icon: 'oauth-manage',
+                    private: true,
+                    roles: [1], // 仅 admin
+                }
             }
         ]
 

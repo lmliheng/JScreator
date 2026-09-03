@@ -169,6 +169,7 @@ const article_detail = async (article_id) => {
                    u.username AS author_username,
                    u.avatar AS author_avatar,
                    u.bio AS author_bio,
+                   a.ai_summary,
                    a.created_at, a.updated_at
             FROM article a
             LEFT JOIN user u ON a.user = u.id
@@ -177,6 +178,10 @@ const article_detail = async (article_id) => {
         const [rows] = await pool.query(sql, [article_id])
         const article = rows[0]
         if (!article) return null
+        // mysql2 对 JSON 自动 parse；字符串则 JSON.parse
+        if (article.ai_summary && typeof article.ai_summary === 'string') {
+            try { article.ai_summary = JSON.parse(article.ai_summary) } catch (e) { article.ai_summary = null }
+        }
         const cats = await article_getCategories(article_id)
         article.category_ids = cats.map(c => c.category_id)
         article.category_names = cats.map(c => c.category_name)

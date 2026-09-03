@@ -130,6 +130,11 @@ router.post('/article/add', async (req, res) => {
             status: status === undefined ? 1 : Number(status),
             category_ids: category_ids || [],
         })
+        // 正式发布(status=1)时异步生成 AI 总结（不阻塞响应）
+        if (Number(status === undefined ? 1 : status) === 1) {
+            const { summarizeAndSave } = require('../utils/ai_summary')
+            summarizeAndSave(article_id, { title, content }).then(() => {})
+        }
         res.json({ code: 200, success: true, message: '添加成功', data: { article_id } })
     } catch (error) {
         console.error('添加文章错误:', error)
@@ -163,6 +168,11 @@ router.put('/article/update/:id', async (req, res) => {
             status: status === undefined ? undefined : Number(status),
             category_ids,
         })
+        // 更新后若为正式发布，异步刷新 AI 总结
+        if (Number(status === undefined ? article && article.status : status) === 1) {
+            const { summarizeAndSave } = require('../utils/ai_summary')
+            summarizeAndSave(article_id, { title: title ?? article.title, content: content ?? article.content }).then(() => {})
+        }
         res.json({ code: 200, success: true, message: '更新成功', data: { article_id } })
     } catch (error) {
         console.error('更新文章错误:', error)
@@ -601,6 +611,37 @@ router.post('/article_category/set', async (req, res) => {
     } catch (error) {
         console.error('设置文章分类错误:', error)
         return res.status(500).send('设置文章分类失败', error.message)
+    }
+})
+
+// 手动重新生成 AI 总结（作者本人或 admin/editor）
+router.post('/article/ai-summary/regenerate/:id', async (req, res) => {
+    const user = getLoginUser(req)
+    if (!user) {
+        return res.status(401).json({ code: 401, success: false, message: '未登录或登录过期' })
+    }
+    const article_id = Number(req.params.id)
+    if (!article_id) {
+        return res.status(400).json({ code: 400, success: false, message: '文章id不能为空' })
+    }
+    try {
+        const article = await article_detail(article_id)
+        if (!article) {
+            return res.status(404).json({ code: 404, success: false, message: '文章不存在' })
+        }
+        const isOwner = Number(article.user_id) === Number(user.id)
+        if (!isOwner && !(await isAdminOrEditor(user.id))) {
+            return res.status(403).json({ code: 403, success: false, message: '无权限操作该文章' })
+        }
+        const { summarizeAndSave } = require('../utils/ai_summary')
+        const result = await summarizeAndSave(article_id, { title: article.title, content: article.content })
+        if (!result) {
+            return res.status(500).json({ code: 500, success: false, message: 'AI 总结生成失败，请重试或检查 LLM 配置' })
+        }
+        res.json({ code: 200, success: true, message: 'AI 总结已生成', data: { ai_summary: result } })
+    } catch (error) {
+        console.error('重新生成 AI 总结错误:', error)
+        res.status(500).json({ code: 500, success: false, message: '操作失败' })
     }
 })
 

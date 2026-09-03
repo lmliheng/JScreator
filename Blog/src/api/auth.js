@@ -36,3 +36,31 @@ export function emailLogin(email, code) {
     user: res.user,
   }))
 }
+
+// TOTP 直接登录：账号(用户名/邮箱) + 6 位动态码
+export function totpLogin(account, code) {
+  return http.post('/totp/login', { account, code }).then((res) => ({
+    token: res.token,
+    user: res.user_info,
+  }))
+}
+
+// TOTP 绑定（登录后）：生成 secret + otpauth URI
+export function totpSetup() {
+  return http.post('/totp/setup').then((res) => res.data)
+}
+
+// TOTP 绑定确认
+export function totpConfirm(secret, code) {
+  return http.post('/totp/confirm', { secret, code }).then((res) => res)
+}
+
+// TOTP 解绑
+export function totpDisable(code) {
+  return http.post('/totp/disable', { code }).then((res) => res)
+}
+
+// TOTP 状态查询
+export function totpStatus() {
+  return http.get('/totp/status').then((res) => res.data)
+}

@@ -403,6 +403,58 @@ export const requestAnnounceDelete = (id) => api({
     method: 'delete'
 })
 
+// ============ API Key 管理 ============
+export const requestApiKeyList = () => api({
+    url: '/api-keys',
+    method: 'get'
+})
+
+export const requestApiKeyCreate = (data) => api({
+    url: '/api-keys',
+    method: 'post',
+    data
+})
+
+export const requestApiKeyStatus = (id, status) => api({
+    url: `/api-keys/${id}/status`,
+    method: 'put',
+    data: { status }
+})
+
+export const requestApiKeyDelete = (id) => api({
+    url: `/api-keys/${id}`,
+    method: 'delete'
+})
+
+// ============ OAuth 应用管理（仅 admin） ============
+export const requestOAuthClientList = () => api({
+    url: '/oauth/admin/clients',
+    method: 'get'
+})
+
+export const requestOAuthClientCreate = (data) => api({
+    url: '/oauth/admin/clients',
+    method: 'post',
+    data
+})
+
+export const requestOAuthClientUpdate = (id, data) => api({
+    url: `/oauth/admin/clients/${id}`,
+    method: 'put',
+    data
+})
+
+export const requestOAuthClientStatus = (id, status) => api({
+    url: `/oauth/admin/clients/${id}/status`,
+    method: 'put',
+    data: { status }
+})
+
+export const requestOAuthClientDelete = (id) => api({
+    url: `/oauth/admin/clients/${id}`,
+    method: 'delete'
+})
+
 // 数据库备份下载（仅 admin）—— 需要 blob 响应，不走响应拦截器解包；放宽超时（导出可能较慢）
 export const requestBackupDownload = () => {
     return api({

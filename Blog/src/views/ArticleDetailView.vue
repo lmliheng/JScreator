@@ -11,6 +11,7 @@ import CommentSection from '@/components/CommentSection.vue'
 import ShareModal from '@/components/ShareModal.vue'
 import AdSlot from '@/components/AdSlot.vue'
 import { toggleLike, toggleFavorite, getSocialStatus } from '@/api/social'
+import http from '@/api/http'
 
 const route = useRoute()
 const router = useRouter()
@@ -81,6 +82,108 @@ const doFavorite = async () => {
     toast.error(e?.response?.data?.message || e.message || '操作失败')
   } finally {
     actionLoading.value = false
+  }
+}
+
+// ===== AI 总结（打字机逐字展示已存内容） =====
+const aiOpen = ref(false)
+const aiSummary = ref(null)
+const aiTyping = ref(false)
+const aiShowSummary = ref('')
+const aiKeyPoints = ref([])
+const aiShowAnalysis = ref([])
+const aiShowAdvice = ref([])
+const aiGenerator = ref(null)
+
+// 打开面板：已预生成则打字机展示；否则请求生成接口
+const openAiSummary = async () => {
+  aiOpen.value = true
+  if (article.value?.ai_summary) {
+    startTyping(article.value.ai_summary)
+    return
+  }
+  aiTyping.value = true
+  aiShowSummary.value = 'AI 总结生成中…'
+  try {
+    const res = await http.post(`/article/ai-summary/regenerate/${article.value.article_id}`)
+    const s = res?.data?.ai_summary
+    if (s) {
+      article.value.ai_summary = s
+      startTyping(s)
+    } else {
+      aiShowSummary.value = '暂无 AI 总结'
+      aiTyping.value = false
+    }
+  } catch (e) {
+    aiShowSummary.value = e?.response?.data?.message || 'AI 总结生成失败'
+    aiTyping.value = false
+  }
+}
+
+const startTyping = (s) => {
+  aiSummary.value = s
+  aiTyping.value = true
+  aiShowSummary.value = ''
+  aiKeyPoints.value = []
+  aiShowAnalysis.value = []
+  aiShowAdvice.value = []
+  if (aiGenerator.value) {
+    clearInterval(aiGenerator.value)
+    aiGenerator.value = null
+  }
+  const kp = s.key_points || []
+  const an = s.analysis || []
+  const av = s.advice || []
+  // 逐字推进：摘要单行，其余按行组依次展开
+  let summaryChars = 0
+  const totalKp = kp.length
+  const totalAn = an.length
+  let curKp = 0
+  let curAn = 0
+  let curAv = 0
+  // 行内进度
+  let kpIdx = 0
+  let anIdx = 0
+  let avIdx = 0
+  const tick = () => {
+    if (summaryChars < s.summary.length) {
+      summaryChars = Math.min(summaryChars + 3, s.summary.length)
+      aiShowSummary.value = s.summary.slice(0, summaryChars)
+      return
+    }
+    if (curKp < totalKp) {
+      kpIdx = Math.min(kpIdx + 2, kp[curKp].length)
+      aiKeyPoints.value[curKp] = kp[curKp].slice(0, kpIdx)
+      aiKeyPoints.value = [...aiKeyPoints.value]
+      if (kpIdx >= kp[curKp].length) { curKp++; kpIdx = 0 }
+      return
+    }
+    if (curAn < totalAn) {
+      anIdx = Math.min(anIdx + 2, an[curAn].length)
+      aiShowAnalysis.value[curAn] = an[curAn].slice(0, anIdx)
+      aiShowAnalysis.value = [...aiShowAnalysis.value]
+      if (anIdx >= an[curAn].length) { curAn++; anIdx = 0 }
+      return
+    }
+    if (curAv < av.length) {
+      avIdx = Math.min(avIdx + 2, av[curAv].length)
+      aiShowAdvice.value[curAv] = av[curAv].slice(0, avIdx)
+      aiShowAdvice.value = [...aiShowAdvice.value]
+      if (avIdx >= av[curAv].length) { curAv++; avIdx = 0 }
+      return
+    }
+    aiTyping.value = false
+    clearInterval(aiGenerator.value)
+    aiGenerator.value = null
+  }
+  aiGenerator.value = setInterval(tick, 16)
+}
+
+const closeAiSummary = () => {
+  aiOpen.value = false
+  if (aiGenerator.value) {
+    clearInterval(aiGenerator.value)
+    aiGenerator.value = null
   }
 }
 
@@ -290,6 +393,64 @@ onBeforeUnmount(() => {
       <!-- Markdown 正文 -->
       <div class="prose" v-html="html"></div>
 
+      <!-- AI 总结 -->
+      <div class="mt-10">
+        <button v-if="!aiOpen" class="ai-summary-toggle" type="button" @click="openAiSummary">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2zM9 20h6M10 23h4" />
+          </svg>
+          AI 总结 · 文章导读
+        </button>
+
+        <div v-else class="ai-summary-panel">
+          <div class="ai-summary-head">
+            <span class="ai-summary-title">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2zM9 20h6M10 23h4" />
+              </svg>
+              AI 总结
+            </span>
+            <button class="ai-close-btn" type="button" aria-label="收起" @click="closeAiSummary">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="ai-summary-body">
+            <template v-if="aiShowSummary">
+              <p class="ai-summary-text">
+                <span class="ai-section-tag">概述</span>{{ aiShowSummary }}
+                <span v-if="aiTyping" class="ai-cursor"></span>
+              </p>
+            </template>
+
+            <template v-if="aiKeyPoints.length">
+              <div class="ai-section-title">核心要点</div>
+              <ul class="ai-list">
+                <li v-for="(kp, i) in aiKeyPoints" :key="'kp' + i">{{ kp }}</li>
+              </ul>
+            </template>
+
+            <template v-if="aiShowAnalysis.length">
+              <div class="ai-section-title">分析评估</div>
+              <ul class="ai-list">
+                <li v-for="(a, i) in aiShowAnalysis" :key="'an' + i">{{ a }}</li>
+              </ul>
+            </template>
+
+            <template v-if="aiShowAdvice.length">
+              <div class="ai-section-title">读者建议</div>
+              <ul class="ai-list">
+                <li v-for="(a, i) in aiShowAdvice" :key="'av' + i">{{ a }}</li>
+              </ul>
+            </template>
+
+            <p v-if="aiTyping && !aiShowSummary" class="ai-loading">生成中…</p>
+          </div>
+          <div v-if="aiSummary && !aiTyping" class="ai-summary-foot">本文 AI 导读由 DeepSeek 生成</div>
+        </div>
+      </div>
+
       <!-- 评论区上方广告位 -->
       <AdSlot position="article_bottom" />
 
@@ -364,5 +525,140 @@ onBeforeUnmount(() => {
   border-color: var(--color-accent);
   background-color: color-mix(in oklab, var(--color-accent) 10%, transparent);
   color: var(--color-accent);
+}
+
+/* ---- AI 总结 ---- */
+.ai-summary-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2c3e50, #405f7d);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(44, 62, 80, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.ai-summary-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(44, 62, 80, 0.4);
+}
+.ai-summary-panel {
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: linear-gradient(160deg, color-mix(in oklab, var(--color-accent) 5%, transparent), transparent 40%);
+  overflow: hidden;
+}
+.ai-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-line);
+}
+.ai-summary-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-ink);
+}
+.ai-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+.ai-close-btn:hover {
+  background: color-mix(in oklab, var(--color-accent) 10%, transparent);
+  color: var(--color-accent);
+}
+.ai-summary-body {
+  padding: 16px 18px 8px;
+}
+.ai-summary-text {
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--color-body);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ai-section-tag {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  vertical-align: 1px;
+}
+.ai-section-title {
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-ink);
+}
+.ai-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ai-list li {
+  position: relative;
+  padding-left: 16px;
+  margin: 4px 0;
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--color-body);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ai-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  opacity: 0.55;
+}
+.ai-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--color-accent);
+  animation: aiBlink 0.8s step-end infinite;
+}
+@keyframes aiBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.ai-loading {
+  padding: 8px 0 14px;
+  font-size: 13px;
+  color: var(--color-faint);
+}
+.ai-summary-foot {
+  padding: 6px 18px 12px;
+  font-size: 11px;
+  color: var(--color-faint);
+  text-align: right;
 }
 </style>

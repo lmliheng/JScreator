@@ -174,9 +174,110 @@ const submitPwd = async () => {
     }
 }
 
+// ===== TOTP 两步验证 =====
+const totpBound = ref(false)
+const totpVisible = ref(false) // 绑定/解绑弹窗
+const totpStep = ref('bind') // bind: 展示二维码 | confirm: 输入动态码 | disable
+const totpSecret = ref('')
+const totpQrUrl = ref('')
+const totpCodeInput = ref('')
+const totpBusy = ref(false)
+
+const loadTotpStatus = async () => {
+    try {
+        const res = await api.get('/totp/status')
+        totpBound.value = !!res.data?.bound
+    } catch (e) {
+        totpBound.value = false
+    }
+}
+
+// 打开 TOTP 弹窗
+const openTotp = async () => {
+    totpVisible.value = true
+    if (!totpBound.value) {
+        // 未绑定：开始绑定流程 → 拉取 secret + 生成二维码
+        totpStep.value = 'bind'
+        totpBusy.value = true
+        try {
+            const res = await api.post('/totp/setup')
+            totpSecret.value = res.data?.secret || ''
+            const uri = res.data?.uri || ''
+            totpQrUrl.value = await toDataURL(uri)
+        } catch (e) {
+            ElMessage.error(e?.response?.data?.message || '获取绑定信息失败')
+        } finally {
+            totpBusy.value = false
+        }
+    } else {
+        totpStep.value = 'disable'
+    }
+}
+
+// otpauth URI → dataURL 二维码
+const toDataURL = (text) => {
+    return new Promise((resolve) => {
+        if (!text) return resolve('')
+        // 动态 import（webpack 会分包）
+        import('qrcode').then((QRCode) => {
+            QRCode.toDataURL(text, { width: 180, margin: 1 })
+                .then(resolve)
+                .catch(() => resolve(''))
+        }).catch(() => resolve(''))
+    })
+}
+
+const copySecret = async () => {
+    try {
+        await navigator.clipboard.writeText(totpSecret.value)
+        ElMessage.success('密钥已复制')
+    } catch (e) {
+        ElMessage.warning('复制失败，请手动选择复制')
+    }
+}
+
+// 确认绑定
+const confirmTotp = async () => {
+    if (!totpCodeInput.value.trim()) {
+        ElMessage.warning('请输入 6 位动态码')
+        return
+    }
+    totpBusy.value = true
+    try {
+        await api.post('/totp/confirm', { secret: totpSecret.value, code: totpCodeInput.value.trim() })
+        ElMessage.success('TOTP 绑定成功')
+        totpBound.value = true
+        totpVisible.value = false
+    } catch (e) {
+        ElMessage.error(e?.response?.data?.message || '绑定失败')
+    } finally {
+        totpBusy.value = false
+    }
+}
+
+// 解绑
+const disableTotp = async () => {
+    if (!totpCodeInput.value.trim()) {
+        ElMessage.warning('请输入当前 6 位动态码以确认解绑')
+        return
+    }
+    totpBusy.value = true
+    try {
+        await api.post('/totp/disable', { code: totpCodeInput.value.trim() })
+        ElMessage.success('已解绑 TOTP')
+        totpBound.value = false
+        totpVisible.value = false
+    } catch (e) {
+        ElMessage.error(e?.response?.data?.message || '解绑失败')
+    } finally {
+        totpBusy.value = false
+    }
+}
+
 onMounted(() => {
     // 进首页总是刷新用户信息（含文章/评论统计）
     refreshUserInfo()
+    loadTotpStatus()
 })
 </script>
 
@@ -208,6 +309,10 @@ onMounted(() => {
             <div class="hero-actions">
                 <el-button type="primary" @click="openEdit">编辑资料</el-button>
                 <el-button plain @click="pwdVisible = true">重置密码</el-button>
+                <el-button plain @click="openTotp">
+                    <el-tag v-if="totpBound" size="small" type="success" effect="plain" style="margin-right: 6px">已启用</el-tag>
+                    TOTP 验证
+                </el-button>
             </div>
         </div>
 
@@ -384,6 +489,63 @@ onMounted(() => {
             <template #footer>
                 <el-button @click="pwdVisible = false">取消</el-button>
                 <el-button type="primary" @click="submitPwd">保存</el-button>
+            </template>
+        </el-dialog>
+
+        <!-- TOTP 绑定/解绑弹窗 -->
+        <el-dialog v-model="totpVisible" :title="totpBound ? 'TOTP 动态验证' : '绑定 TOTP 动态验证'" width="420px">
+            <!-- 绑定：展示二维码 -->
+            <div v-if="!totpBound" class="totp-bind">
+                <p class="totp-tip">用 Google Authenticator / 微信小程序「动态口令」等扫描二维码，或手动输入密钥：</p>
+                <div class="totp-qr">
+                    <img v-if="totpQrUrl" :src="totpQrUrl" alt="TOTP 二维码" width="180" height="180" />
+                    <el-skeleton v-else animated style="width: 180px">
+                        <template #template>
+                            <el-skeleton-item variant="image" style="width: 180px; height: 180px" />
+                        </template>
+                    </el-skeleton>
+                </div>
+                <el-input :model-value="totpSecret" readonly class="totp-secret">
+                    <template #append>
+                        <el-button @click="copySecret">复制密钥</el-button>
+                    </template>
+                </el-input>
+                <el-divider />
+                <p class="totp-tip">扫描后输入 Authenticator 上显示的 6 位动态码完成绑定：</p>
+                <el-input
+                    v-model="totpCodeInput"
+                    placeholder="输入 6 位动态码"
+                    maxlength="6"
+                    style="margin-top: 8px"
+                    @keyup.enter="confirmTotp"
+                />
+            </div>
+            <!-- 解绑 -->
+            <div v-else>
+                <el-alert type="warning" :closable="false" show-icon
+                    title="解绑后需重新扫码绑定；解绑需要验证当前动态码"
+                    style="margin-bottom: 12px" />
+                <el-input
+                    v-model="totpCodeInput"
+                    placeholder="输入当前 6 位动态码"
+                    maxlength="6"
+                    @keyup.enter="disableTotp"
+                />
+            </div>
+            <template #footer>
+                <el-button @click="totpVisible = false">取消</el-button>
+                <el-button
+                    v-if="!totpBound"
+                    type="primary"
+                    :loading="totpBusy"
+                    @click="confirmTotp"
+                >确认绑定</el-button>
+                <el-button
+                    v-else
+                    type="danger"
+                    :loading="totpBusy"
+                    @click="disableTotp"
+                >确认解绑</el-button>
             </template>
         </el-dialog>
     </div>
@@ -582,5 +744,32 @@ onMounted(() => {
     align-items: center;
     gap: 10px;
     width: 100%;
+}
+
+/* ---- TOTP 绑定 ---- */
+.totp-bind {
+    text-align: center;
+}
+.totp-tip {
+    font-size: 13px;
+    color: #909399;
+    line-height: 1.7;
+    text-align: left;
+}
+.totp-qr {
+    margin: 14px 0;
+    display: flex;
+    justify-content: center;
+}
+.totp-qr img {
+    border: 1px solid #ebeef5;
+    border-radius: 8px;
+}
+.totp-secret {
+    margin: 4px 0 0;
+}
+.totp-foot {
+    margin-top: 16px;
+    text-align: right;
 }
 </style>

@@ -398,11 +398,12 @@ onBeforeUnmount(() => {
             </span>
           </div>
 
-          <!-- 关注按钮 / 我的收藏（本人） -->
-          <div v-if="isSelf" class="hero-actions">
+          <!-- 关注按钮 / 我的收藏 / 私信（本人） -->
+          <div v-if="isSelf" class="hero-actions hero-actions-wrap">
             <RouterLink to="/me/favorites" class="hero-btn-ghost">☆ 我的收藏</RouterLink>
+            <RouterLink to="/assistant" class="hero-btn-ghost">✉ 消息中心</RouterLink>
           </div>
-          <div v-else class="hero-actions">
+          <div v-else class="hero-actions hero-actions-wrap">
             <button
               class="hero-btn"
               :class="socialStats.isFollowing ? 'hero-btn-following' : ''"
@@ -410,6 +411,11 @@ onBeforeUnmount(() => {
             >
               {{ socialStats.isFollowing ? '已关注' : '+ 关注' }}
             </button>
+            <RouterLink
+              v-if="auth.isLoggedIn"
+              :to="{ path: '/assistant', query: { dmto: profile?.id || '', dmname: profile?.username || username } }"
+              class="hero-btn-ghost"
+            >✉ 发私信</RouterLink>
           </div>
 
           <!-- 社交链接 -->
@@ -817,6 +823,10 @@ onBeforeUnmount(() => {
   justify-content: center;
   position: relative;
   z-index: 1;
+}
+.hero-actions-wrap {
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .hero-btn {
   padding: 8px 26px;
