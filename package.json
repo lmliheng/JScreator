@@ -9,6 +9,10 @@
         "dev": "nodemon server.js --dev",
         "test": "node test",
         "build": "rollup -c",
+        "ts:build": "tsc -p tsconfig.json",
+        "start:ts": "node Backend/dist/server.js",
+        "watch:ts": "tsc -p tsconfig.json --watch",
+        "test:ts": "tsc -p tsconfig.json && node --test --test-force-exit Backend/dist/contract.test.js Backend/dist/db/transaction.test.js Backend/dist/common/errors.test.js Backend/dist/common/response.test.js Backend/dist/common/middleware/auth.test.js Backend/dist/modules/auth/auth.service.test.js Backend/dist/modules/article/article.service.test.js",
         "db:export": "node scripts/db-sync.js export",
         "db:import": "node scripts/db-sync.js import",
         "db:list": "node scripts/db-sync.js list"
@@ -32,6 +36,10 @@
         "ws": "^8.21.3"
     },
     "devDependencies": {
-        "rollup": "^4.62.5"
+        "@types/cors": "^2.8.19",
+        "@types/express": "^4.17.25",
+        "@types/node": "^20.19.43",
+        "rollup": "^4.62.5",
+        "typescript": "^5.9.3"
     }
 }

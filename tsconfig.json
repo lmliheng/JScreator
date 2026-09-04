@@ -1,0 +1,23 @@
+{
+  // JScreator 后端（Backend/）TypeScript 编译配置（位于仓库根，随项目一起管理）
+  // 用法（根目录执行）：npm run ts:build / npm run watch:ts
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2022",
+    "types": ["node"],
+    "rootDir": "./Backend/src",
+    "outDir": "./Backend/dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["Backend/src"]
+}

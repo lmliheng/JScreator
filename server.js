@@ -41,7 +41,6 @@ app.use((req, res, next) => {
 app.use(require('./routes/login_request'))
 app.use(require('./routes/register_request'))
 app.use(require('./routes/article_request'))
-app.use(require('./routes/article_category_request'))
 app.use(require('./routes/blog_profile_request'))
 app.use(require('./routes/comment_request'))
 app.use(require('./routes/user_request'))

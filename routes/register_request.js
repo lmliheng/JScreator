@@ -19,7 +19,7 @@ const { tokenCreator } = require('../utils/token_creator')
 // 从前端data中拿注册配置register_mode:email或phone或者wechat或者GitHub，
 // 不加默认没有注册邮箱和手机短信注册模式
 
-router.post('/register', async (req, res) => {
+router.post('/sys/register', async (req, res) => {
 
     let register_mode = req.body.register_mode ? req.body.register_mode : ''
     // 简单注册模式

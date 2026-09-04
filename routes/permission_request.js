@@ -44,23 +44,6 @@ router.get('/permission/list', async (req, res) => {
     }
 })
 
-// 向后兼容旧路由
-router.get('/permission/getAll', async (req, res) => {
-    try {
-        const permissions = await permission_getAll()
-        res.json({
-            code: 200,
-            success: true,
-            message: '获取所有权限成功',
-            permissions,
-            data: { list: permissions }
-        })
-    } catch (error) {
-        console.error('获取所有权限错误:', error)
-        res.status(500).json({ code: 500, success: false, message: '服务器内部错误' })
-    }
-})
-
 // 修改权限名称/描述
 router.put('/permission/update', async (req, res) => {
     const admin_id = await requireAdmin(req, res)
@@ -76,28 +59,6 @@ router.put('/permission/update', async (req, res) => {
     }
     try {
         await permission_update(permission_id, permission_name, permission_description)
-        res.json({ code: 200, success: true, message: '修改权限成功' })
-    } catch (error) {
-        console.error('修改权限错误:', error)
-        res.status(500).json({ code: 500, success: false, message: '服务器内部错误' })
-    }
-})
-
-// 向后兼容旧路由（旧用 POST）
-router.post('/permission/update', async (req, res) => {
-    const admin_id = await requireAdmin(req, res)
-    if (admin_id === null) return
-
-    const { permission_id, permission_name, permission_desc, permission_description } = req.body
-    if (!permission_id || !permission_name) {
-        return res.status(400).json({
-            code: 400,
-            success: false,
-            message: '权限id与权限名不能为空'
-        })
-    }
-    try {
-        await permission_update(permission_id, permission_name, permission_description || permission_desc)
         res.json({ code: 200, success: true, message: '修改权限成功' })
     } catch (error) {
         console.error('修改权限错误:', error)
