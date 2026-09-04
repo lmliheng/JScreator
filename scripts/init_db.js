@@ -36,7 +36,7 @@ const createTables = async () => {
   for (const sql of sqls) {
     await pool.query(sql);
     const name = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/)[1];
-    console.log('✅ 建表成功:', name);
+    console.log('建表成功:', name);
   }
 };
 

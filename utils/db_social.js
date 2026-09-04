@@ -64,6 +64,8 @@ const followStats = async (userId) => {
 
 // ===== 点赞 =====
 
+
+
 // 点赞（已赞则取消，返回新状态）
 const likeToggle = async (articleId, userId) => {
     const [rows] = await pool.query(
@@ -78,6 +80,8 @@ const likeToggle = async (articleId, userId) => {
     return { liked: true }
 }
 
+
+
 // 是否已赞
 const likeExists = async (articleId, userId) => {
     const [rows] = await pool.query(
@@ -87,11 +91,15 @@ const likeExists = async (articleId, userId) => {
     return rows.length > 0
 }
 
+
+
 // 文章点赞数
 const likeCountByArticle = async (articleId) => {
     const [rows] = await pool.query('SELECT COUNT(*) AS c FROM article_like WHERE article_id = ?', [articleId])
     return rows[0].c
 }
+
+
 
 // 某用户收到的全部点赞数（其文章获赞总数）
 const likeCountReceived = async (userId) => {
@@ -143,10 +151,14 @@ const likeManageList = async (page = 1, pageSize = 10, keyword = '') => {
     return { list: rows, total, page, pageSize }
 }
 
+
+
 // 删除点赞记录
 const likeManageDelete = async (id) => {
     await pool.query('DELETE FROM article_like WHERE id = ?', [id])
 }
+
+
 
 // ===== 收藏 =====
 

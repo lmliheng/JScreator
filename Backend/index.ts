@@ -1,9 +1,9 @@
-const dotenv = require('dotenv');
+import dotenv from 'dotenv'
 dotenv.config();
 
-const express = require('express');
-const { testConnection } = require('./utils/connect_db');
-const cors = require('cors');
+import express from 'express'
+import cors from 'cors'
+
 const app = express();
 
 // CORS 白名单：只允许自己的前端域名（本地 dev + 云托管前端）
@@ -14,6 +14,8 @@ const allowedOrigins = [
     'http://localhost:8085',
     'https://prod-3gqvgr0c0ffdcde1-1324237338.tcloudbaseapp.com',
 ];
+
+
 app.use(cors({
     origin(origin, callback) {
         // 无 origin（同源/非浏览器/curl 等）直接放行
@@ -71,18 +73,18 @@ registerRoutes(app);
 
 
 async function startServer() {
-  const PORT = process.env.PORT || 7000;
-  // 用 http.Server 承载 Express，以便 WebSocket 挂同一端口
-  const http = require('http');
-  const server = http.createServer(app);
+    const PORT = process.env.PORT || 7000;
+    // 用 http.Server 承载 Express，以便 WebSocket 挂同一端口
+    const http = require('http');
+    const server = http.createServer(app);
 
-  // WebSocket 实时服务（Agent 对话 + 用户私信）
-  const { initWsServer } = require('./utils/ws_server');
-  initWsServer(server);
+    // WebSocket 实时服务（Agent 对话 + 用户私信）
+    const { initWsServer } = require('./utils/ws_server');
+    initWsServer(server);
 
-  server.listen(PORT, () => {
-    console.log(`服务器运行在端口 ${PORT}`);
-  });
+    server.listen(PORT, () => {
+        console.log(`服务器运行在端口 ${PORT}`);
+    });
 }
 
 startServer();

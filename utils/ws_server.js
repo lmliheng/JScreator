@@ -30,6 +30,8 @@ const {
 
 const clients = new Map() // userId -> Set<ws>
 
+
+
 function verifyToken(token) {
     try {
         const t = String(token || '').replace(/^Bearer\s+/i, '')
