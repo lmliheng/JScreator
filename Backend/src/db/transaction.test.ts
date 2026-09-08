@@ -1,5 +1,5 @@
 /**
- * P4 单测：withTransaction —— 提交/回滚/释放顺序（显式 fake pool/conn）。
+ * withTransaction —— 提交/回滚/释放顺序（显式 fake pool/conn）。
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

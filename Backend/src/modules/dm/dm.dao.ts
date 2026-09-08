@@ -1,10 +1,9 @@
 /**
  * modules/dm/dm.dao —— message 表参数化 SQL（REST 侧：会话/历史/未读/已读）。
- * 来源：utils/db_message.js（msgSend 属 WS 写路径，暂由 legacy WS 使用，P5 收编）。
+ * 
  */
 import { pool } from '../../db/pool.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = any;
 
 export class DmDao {
@@ -21,9 +20,7 @@ export class DmDao {
              LIMIT ? OFFSET ?`,
             [userA, userB, userB, userA, ps, offset]
         );
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         (rows as Array<AnyRow>).reverse();
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return rows as Array<AnyRow>;
     }
 

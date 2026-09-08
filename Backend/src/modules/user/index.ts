@@ -1,5 +1,5 @@
 /**
- * modules/user —— 组装（P3 user 域：/sys/profile、/userInfo、/resetPassword、/user-manage/*）。
+ * modules/user
  */
 import { Router } from 'express';
 import { userDao } from './user.dao.js';
@@ -7,6 +7,7 @@ import { loadCryptoPassword, loadTokenValidator } from '../../legacy.js';
 import { UserService, type UserDeps } from './user.service.js';
 import { UserController, type UserControllerDeps } from './user.controller.js';
 import { userRoutes } from './user.routes.js';
+
 
 export function createUserRouter(): Router {
     const deps: UserDeps = {

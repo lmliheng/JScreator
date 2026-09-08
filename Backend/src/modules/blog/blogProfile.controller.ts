@@ -1,5 +1,6 @@
 /**
- * modules/blog/blogProfile.controller —— /blog/* HTTP 层，成功/失败响应对齐 legacy。
+ * modules/blog/blogProfile.controller —— 
+ * /blog/* HTTP 层，成功/失败响应对齐
  */
 import type { Request, Response } from 'express';
 import type { BlogProfileService } from './blogProfile.service.js';
@@ -12,9 +13,20 @@ function render(res: Response, result: { ok: false; status: number; message: str
     res.json(successBody);
 }
 
-export class BlogProfileController {
-    constructor(private readonly svc: BlogProfileService) {}
 
+/**
+ * @blog系统主页 /
+ * 
+ */
+export class BlogProfileController {
+    constructor(private readonly svc: BlogProfileService) {
+
+    }
+
+    /**
+     * 
+     * @获取用户列表
+     */
     users = async (req: Request, res: Response): Promise<void> => {
         const { page, pageSize } = req.query;
         try {
@@ -26,6 +38,10 @@ export class BlogProfileController {
         }
     };
 
+    /**
+     * 
+     * @获取最新文章
+     */
     feed = async (req: Request, res: Response): Promise<void> => {
         const { limit } = req.query;
         try {
@@ -37,6 +53,10 @@ export class BlogProfileController {
         }
     };
 
+    /**
+     * 
+     * @获取热门文章
+     */
     hot = async (req: Request, res: Response): Promise<void> => {
         const { limit } = req.query;
         try {
@@ -83,4 +103,5 @@ export class BlogProfileController {
             res.status(500).json({ code: 500, success: false, message: '获取用户文章列表失败' });
         }
     };
+
 }

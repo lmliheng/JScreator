@@ -6,9 +6,6 @@
     "author": "lmliheng",
     "license": "MIT",
     "scripts": {
-        "dev": "nodemon server.js --dev",
-        "test": "node test",
-        "build": "rollup -c",
         "ts:build": "tsc -p tsconfig.json",
         "start:ts": "node Backend/dist/server.js",
         "watch:ts": "tsc -p tsconfig.json --watch",
@@ -39,7 +36,6 @@
         "@types/cors": "^2.8.19",
         "@types/express": "^4.17.25",
         "@types/node": "^20.19.43",
-        "rollup": "^4.62.5",
         "typescript": "^5.9.3"
     }
 }

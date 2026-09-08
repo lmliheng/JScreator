@@ -25,6 +25,10 @@ function render(res: Response, out: SResult): void {
     res.json(body);
 }
 
+
+/**
+ * @社交系统控制层
+ */
 export class SocialController {
     constructor(
         private readonly svc: SocialService,

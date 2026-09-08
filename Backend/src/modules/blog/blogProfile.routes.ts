@@ -5,6 +5,10 @@ import { Router } from 'express';
 import { asyncHandler } from '../../common/errors.js';
 import type { BlogProfileController } from './blogProfile.controller.js';
 
+/**
+ * 
+ * @主页 /
+ */
 export function blogProfileRoutes(ctrl: BlogProfileController): Router {
     const r = Router();
     r.get('/blog/users', asyncHandler(ctrl.users.bind(ctrl)));

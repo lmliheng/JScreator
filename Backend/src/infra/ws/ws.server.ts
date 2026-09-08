@@ -1,6 +1,5 @@
 /**
  * infra/ws/ws.server —— WebSocket 实时服务（挂在与 Express 同一端口 /ws）。
- * P5：协议与行为逐行对齐 legacy utils/ws_server.js，业务经 handlers 注入（services）。
  *
  * 客户端 → 服务端：{type:'agent'|'dm'|'dm_read'|'ping'}；服务端 → 客户端见 legacy 协议注释。
  */
@@ -9,10 +8,8 @@ import type { Server } from 'node:http';
 import { loadTokenValidator } from '../../legacy.js';
 import type { ArticleAgentResult, ProfileAgentResult } from '../../modules/agent/agent.service.js';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const require = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const { WebSocketServer } = require('ws') as { WebSocketServer: new (opts: unknown) => any };
 
 export interface WsHandlers {
@@ -23,11 +20,7 @@ export interface WsHandlers {
     dmUserExists: (userId: number | string) => Promise<boolean>;
     dmMarkRead: (userId: number | string, otherId: number) => Promise<void>;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Ws = any;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const clients = new Map<number, Set<any>>();
 
 function sendToUser(userId: number | string, payload: unknown): void {
@@ -65,10 +58,7 @@ function verifyToken(token: string | undefined): { id: number | string } | null 
 }
 
 export function initWsServer(server: Server, h: WsHandlers): unknown {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const wss = new WebSocketServer({ server, path: '/ws' }) as any;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     wss.on('connection', (ws: any, req: { url: string }) => {
         // token 通过 query 传递（浏览器 WebSocket 不能自定义 header）
         const url = new URL(req.url, 'http://localhost');
@@ -90,7 +80,7 @@ export function initWsServer(server: Server, h: WsHandlers): unknown {
         ws.userId = userId;
 
         ws.on('message', async (raw: Buffer) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
             let msg: any;
             try {
                 msg = JSON.parse(raw.toString());

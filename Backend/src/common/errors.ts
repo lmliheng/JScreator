@@ -32,7 +32,8 @@ export function errorHandler(err: unknown, req: Request, res: Response, next: Ne
         res.status(err.code).json({ code: err.code, success: false, message: err.message });
         return;
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
+    
     const frameworkStatus = (err as any)?.status ?? (err as any)?.statusCode;
     const status = typeof frameworkStatus === 'number' && frameworkStatus >= 400 && frameworkStatus < 600 ? frameworkStatus : 500;
     console.error('未捕获错误:', err);

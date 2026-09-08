@@ -9,8 +9,11 @@ function fail(res: Response, code: number, message: string): void {
     res.status(code).json({ code, success: false, message });
 }
 
+/**
+ * @权限系统控制层
+ */
 export class RbacController {
-    constructor(private readonly dao: RbacDao) {}
+    constructor(private readonly dao: RbacDao) { }
 
     // ================= role =================
     roleList = async (_req: Request, res: Response): Promise<void> => {

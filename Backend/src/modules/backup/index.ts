@@ -1,6 +1,7 @@
 /**
- * modules/backup —— 数据库备份下载（GET /backup/download，admin）。
- * 逻辑对齐 legacy routes/backup_request.js：mysqldump → zip 流式返回。
+ * modules/backup 
+ *  数据库备份下载（GET /backup/download，admin）。
+ * 
  */
 import { createRequire } from 'node:module';
 import { Router } from 'express';
@@ -8,13 +9,10 @@ import { adminOnly, verifyToken } from '../../common/middleware/auth.js';
 import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mysqldump = require('mysqldump') as (opts: unknown) => Promise<{ dump?: { schema?: unknown; data?: unknown } } | string>;
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+//桥接
+const require = createRequire(import.meta.url)
+
+const mysqldump = require('mysqldump') as (opts: unknown) => Promise<{ dump?: { schema?: unknown; data?: unknown } } | string>
 const archiver = require('archiver') as (format: string, opts: unknown) => {
     on: (event: string, cb: (err?: Error) => void) => void;
     pipe: (dest: unknown) => void;
@@ -23,9 +21,13 @@ const archiver = require('archiver') as (format: string, opts: unknown) => {
     destroy: (err?: Error) => void;
 };
 
+
+/**
+ * @下载打包
+ */
 function downloadHandler(): RequestHandler {
     return async (req: Request, res: Response): Promise<void> => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         const actor = (req as any).user as { id?: number | string } | undefined;
 
         const d = new Date();

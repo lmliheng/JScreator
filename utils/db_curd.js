@@ -1,6 +1,6 @@
 const { pool } = require('./connect_db')
 const { ComparePassword } = require('./crypto_password')
-const { tokenValidator } = require('../utils/token_creator')
+const { tokenValidator } = require('./token_creator')
 const { ToHash } = require('./crypto_password')
 
 const getUserInfoByToken = async (token) => {

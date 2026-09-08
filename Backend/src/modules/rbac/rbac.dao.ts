@@ -1,16 +1,15 @@
 /**
- * modules/rbac/rbac.dao —— role / permission / roleandpermission_middle 参数化 SQL。
- * 来源：utils/db_curd.js 角色权限函数，逐行搬运（setPermission 保持事务）。
+ * modules/rbac/rbac.dao
+ * role / permission / roleandpermission_middle 参数化 SQL。
+ *
  */
 import { pool } from '../../db/pool.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = any;
 
 export class RbacDao {
     async roleGetAll(): Promise<Array<AnyRow>> {
         const [rows] = await pool.query('SELECT * FROM role');
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return rows as Array<AnyRow>;
     }
 

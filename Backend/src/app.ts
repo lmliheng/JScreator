@@ -1,8 +1,3 @@
-/**
- * P1 app 装配：与根 server.js 的装配顺序完全一致（CORS → json → urlencoded → 统计中间件 →
- * legacy 路由 → registerRoutes）。后续 P3 每迁移一个域，就在此处把对应 legacy 挂载替换为
- * modules 下该域的 TS 路由挂载（routes → controller → service → dao）。
- */
 import express from 'express';
 import cors from 'cors';
 import type { NextFunction, Request, Response } from 'express';
@@ -31,7 +26,6 @@ import { userDao } from './modules/user/user.dao.js';
 export function buildApp(): express.Express {
     const app = express();
 
-    // CORS 白名单：只允许自己的前端域名（本地 dev + 云托管前端）——与根 server.js 一致
     app.use(
         cors({
             origin(origin, callback) {
@@ -44,6 +38,7 @@ export function buildApp(): express.Express {
             credentials: true,
         })
     );
+
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 
@@ -57,7 +52,6 @@ export function buildApp(): express.Express {
         next();
     });
 
-    // P3：全部域已迁移为 TS 三层（legacy 挂载清单已清空）；registerLegacyRoutes 为空操作，保留兜底
     app.use(createAuthRouter());
     app.use(createEmailAuthRouter());
     app.use(createTotpRouter());
@@ -82,7 +76,7 @@ export function buildApp(): express.Express {
     const { registerRoutes } = loadApiMonitor();
     registerRoutes(app);
 
-    // P2 收编：统一错误中间件（TS 路由经 asyncHandler 抛错后在此渲染；legacy 路由自带 try/catch 不受影响）
+    // 统一错误中间件
     app.use(errorHandler);
 
     return app;

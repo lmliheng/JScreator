@@ -1,13 +1,10 @@
-/**
- * modules/user/user.routes —— 端点守卫对齐 legacy：profile 手动解析 token；
- * 更新本人=verifyToken+服务内权限；user-manage=list/add/update/reset/delete/delete-batch 需 admin；
- * detail 只需登录。
- */
+
 import { Router } from 'express';
 import { asyncHandler } from '../../common/errors.js';
 import { adminOnly, verifyToken } from '../../common/middleware/auth.js';
 import type { RequestHandler } from 'express';
 import type { UserController } from './user.controller.js';
+
 
 export function userRoutes(
     ctrl: UserController,

@@ -1,20 +1,18 @@
 /**
- * modules/blog/blogProfile.dao —— 博客主页公开数据（user 公开字段 + 文章聚合）。
- * 来源：utils/db_blog_profile.js，SQL 与行整形逐行搬运。
+ * modules/blog/blogProfile.dao 
+ * 博客主页公开数据user 公开字段 + 文章聚合
+ * 
  */
 import { pool } from '../../db/pool.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = any;
 
 export class BlogProfileDao {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     private attachCategoryArrays(row: any): any {
         return {
             ...row,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument
             category_ids: row.category_ids ? String(row.category_ids).split(',').map(Number) : [],
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument
             category_names: row.category_names ? String(row.category_names).split(',') : [],
         };
     }
@@ -26,7 +24,6 @@ export class BlogProfileDao {
              FROM user WHERE username = ?`,
             [username]
         );
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         const row = Array.isArray(rows) && rows.length > 0 ? (rows[0] as AnyRow) : null;
         if (!row) return null;
         const parseJson = (v: unknown): unknown => {
@@ -40,9 +37,7 @@ export class BlogProfileDao {
             }
             return [];
         };
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         row.socials = parseJson(row.socials);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         row.featured_articles = parseJson(row.featured_articles);
         return row;
     }
@@ -65,14 +60,12 @@ export class BlogProfileDao {
             WHERE a.article_id IN (${placeholders}) AND a.status = 1
             GROUP BY a.article_id, a.title, a.content, a.status, a.user, u.username, a.created_at, a.updated_at`;
         const [rows] = await pool.query(sql, unique);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
         const map: Record<number, any> = {};
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      
         (rows as Array<AnyRow>).forEach((r) => {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             map[Number(r.article_id)] = this.attachCategoryArrays(r);
         });
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return unique.map((id) => map[id]).filter(Boolean);
     }
 
@@ -108,7 +101,7 @@ export class BlogProfileDao {
             `SELECT COUNT(*) AS total FROM article a JOIN user u ON a.user = u.id ${whereSql}`,
             params
         );
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        
         const total = countRows[0].total as number;
         const listSql = `SELECT a.article_id, a.title, a.content, a.status, a.user AS user_id,
                 u.username AS author_name, a.created_at, a.updated_at,

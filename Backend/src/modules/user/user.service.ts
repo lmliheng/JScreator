@@ -1,6 +1,8 @@
 /**
- * modules/user/user.service —— 用户域业务（/sys/profile、/userInfo、/resetPassword、/user-manage/*）。
- * 对齐 legacy routes/user_request.js 的分支语义；哈希用注入的 ToHash（crypto_password 桥）。
+ * modules/user/user.service
+ * 
+ * /sys/profile、/userInfo、/resetPassword、/user-manage/
+ * 
  */
 import type { UserId } from './user.dao.js';
 
@@ -35,7 +37,6 @@ export interface UserDeps {
 export class UserService {
     constructor(private readonly d: UserDeps) {}
 
-    /** /sys/profile：userId 来自已解析 token */
     async profile(userId: UserId): Promise<ProfileOutcome> {
         const rows = await this.d.profileRows(userId);
         if (!Array.isArray(rows) || rows.length === 0) {

@@ -1,6 +1,5 @@
 /**
- * modules/openapi —— 组装（P3 api_key/openapi 域：/api-keys* + /api/v1/*）。
- * /api/v1 依赖的 article/blog_profile 数据层暂桥接 legacy utils（legacy.ts），域迁移后切换。
+ * modules/openapi
  */
 import { Router } from 'express';
 import { apiKeyDao } from './apiKey.dao.js';

@@ -10,8 +10,11 @@ function actorId(req: Request): number | string | null {
     return user && user.id != null ? user.id : null;
 }
 
+/**
+ * @私信 控制层
+ */
 export class DmController {
-    constructor(private readonly svc: DmService) {}
+    constructor(private readonly svc: DmService) { }
 
     conversations = async (req: Request, res: Response): Promise<void> => {
         const id = actorId(req);

@@ -11,7 +11,6 @@ export type Result<T> = Ok<T> | Fail;
 export const ok = <T>(value: T): Ok<T> => ({ ok: true, value });
 export const fail = (status: number, message: string): Fail => ({ ok: false, status, message });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = any;
 
 export class BlogProfileService {
