@@ -31,7 +31,7 @@
 // GITHUB_CALLBACK_URL=
 
 // #前端白名单:逗号隔开,可以有两侧空格
-// FRONTEND_URL=http://127.0.0.1:5173,http://127.0.0.1:8085
+// FRONTEND_URLS=http://127.0.0.1:5173,http://127.0.0.1:8085
 
 // #OSS 对象存储
 // OSS_ACCESS_KEY_ID=LTAI5t6JcEKUcTtyf25jFam4

@@ -3,12 +3,12 @@
 目前是一个不成熟的应用，您可以访问它：lmliheng.github.io/lmliheng
 
 单一关系型数据库的*中型后端-单体服务*（采用路由，服务，数据三层结构，通用服务在common目录），多个前台应用。
-OSS采用阿里oss，邮箱服务采用emailsender，连接mysql8使用mysql2连接池
+OSS采用阿里oss，邮箱服务采用emailsender，连接mysql8使用mysql2连接池。
 
 *后续跟进*: 
 P0 性能测试
-P2 
-P3 数据库监控，QPS监控(交给服务商)，
+P1 Agent功能优化 
+P3 数据库监控，QPS监控(交给服务商)
 
 ## 参考代码模式
 
