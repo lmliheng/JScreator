@@ -1,0 +1,2 @@
+timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+1788967234646,485,🔑 POST /sys/login（获取 Token）,401,Unauthorized,🔐 登录获取 Token（setUp） 1-1,text,false,Test failed: code expected to contain /200/,336,247,1,1,http://localhost:7000/sys/login,476,0,30
