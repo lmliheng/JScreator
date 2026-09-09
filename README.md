@@ -7,7 +7,8 @@ OSS采用阿里oss，邮箱服务采用emailsender，连接mysql8使用mysql2连
 
 *后续跟进*: 
 P0 性能测试
-P1 Agent功能优化 
+P1 Agent功能优化,改用ORM
+P2 主页加上QPS监控，数据库调用，API调用
 P3 数据库监控，QPS监控(交给服务商)
 
 ## 参考代码模式
