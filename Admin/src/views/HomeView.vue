@@ -24,7 +24,6 @@ import NotificationBell from '@/components/NotificationBell.vue'
 
 import { ElMessage } from 'element-plus'
 import { Fold, Expand } from '@element-plus/icons-vue'
-import { tr } from 'element-plus/es/locale/index.mjs'
 
 const isCollapse = ref(false)
 const routePath = useRoute() // 获取当前路由路径
@@ -62,12 +61,7 @@ watch(
   }
 )
 
-// watch(
-//   () => authStore.token,
-//   () => {
-//     getUserInfo()
-//   }
-// )
+
 
 onMounted(() => {
   getUserInfo()
@@ -105,10 +99,13 @@ onMounted(() => {
             </div>
 
             <div id="header-right">
+
               <div id="header-driver">
                 <DriverCom />
               </div>
-              <searchCom />
+
+              <!-- <searchCom /> -->
+
               <div id="header-fullscreen">
                 <FullScreen />
               </div>

@@ -36,6 +36,12 @@ import {
   Notebook,
   Bell,
   Monitor,
+  Setting,
+  HomeFilled,
+  Key,
+  Folder,
+  MessageBox,
+  Iphone
 } from '@element-plus/icons-vue'
 
 
@@ -59,13 +65,14 @@ onMounted(() => {
   </div>
   
    <el-menu-item index="/user-profile">
-     <el-icon><User /></el-icon>
+    <el-icon><HomeFilled /></el-icon>
+    
       <template #title>{{ $t('user_profile') }}</template>
     </el-menu-item>
 
     <el-sub-menu index="2" v-if="isAdmin">
       <template #title>
-        <el-icon><Operation /></el-icon>
+        <el-icon><User /></el-icon>
         <span>{{ $t('user') }}</span>
       </template>
         <el-menu-item index="/user/user-manage">{{ $t('user_manage') }}</el-menu-item>  
@@ -75,13 +82,13 @@ onMounted(() => {
 
     <!-- 主页设置：独立顶级菜单，所有角色可见（普通用户设置自己，admin 可设置所有人） -->
     <el-menu-item index="/user/home-setting">
-      <el-icon><Operation /></el-icon>
+      <el-icon><Setting /></el-icon>
       <template #title>{{ $t('home_setting') }}</template>
     </el-menu-item>
 
     <!-- API Keys：所有登录用户可管理自己的外部接口 Key -->
     <el-menu-item index="/system/api-key-manage">
-      <el-icon><Operation /></el-icon>
+      <el-icon><Key /></el-icon>
       <template #title>{{ $t('api_key_manage') }}</template>
     </el-menu-item>
 
@@ -110,17 +117,17 @@ onMounted(() => {
     </el-menu-item>
 
     <el-menu-item v-if="isAdmin" index="/system/ad-manage">
-      <el-icon><Monitor /></el-icon>
+      <el-icon><Folder /></el-icon>
       <template #title>{{ $t('ad_manage') }}</template>
     </el-menu-item>
 
     <el-menu-item v-if="isAdmin" index="/system/announcement-manage">
-      <el-icon><Monitor /></el-icon>
+      <el-icon><MessageBox /></el-icon>
       <template #title>{{ $t('announcement_manage') }}</template>
     </el-menu-item>
 
     <el-menu-item v-if="isAdmin" index="/system/oauth-manage">
-      <el-icon><Monitor /></el-icon>
+      <el-icon><Iphone /></el-icon>
       <template #title>{{ $t('oauth_manage') }}</template>
     </el-menu-item>
   </el-menu>

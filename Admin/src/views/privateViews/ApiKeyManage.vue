@@ -72,27 +72,33 @@
             </template>
         </el-dialog>
 
+
+
         <!-- 创建成功：显示明文一次 -->
         <el-dialog v-model="plainVisible" title="API Key 已创建（请立即保存）" width="520px">
             <el-alert type="warning" :closable="false" show-icon
                 title="明文只显示这一次，关闭后将无法再次查看；请复制保存到安全位置。"
                 style="margin-bottom: 14px" />
+
             <el-input :model-value="plainKey" readonly>
                 <template #append>
                     <el-button @click="copyPlain">复制</el-button>
                 </template>
             </el-input>
+
             <div class="usage">
                 <p>调用方式：</p>
                 <pre>Authorization: Bearer {{ plainKey }}</pre>
-                <p>示例：</p>
-                <pre>curl -H "Authorization: Bearer {{ plainKey }}" \
-  http://your-host/api/v1/articles</pre>
+                <p>示例(Bash执行)</p>
+                <pre>curl -H "Authorization: Bearer {{ plainKey }}" {{base_api}}/api/v1/articles</pre>
+                
             </div>
             <template #footer>
                 <el-button type="primary" @click="plainVisible = false; loadList()">我已保存</el-button>
             </template>
         </el-dialog>
+
+
     </div>
 </template>
 
@@ -111,6 +117,8 @@ const authStore = useAuthStore()
 const roleId = computed(() => Number(authStore.userInfo?.user_detail?.role_id))
 // 仅 admin(1)/editor(3) 可建写权限 key
 const canWrite = computed(() => roleId.value === 1 || roleId.value === 3)
+
+const base_api=process.env.API_BASE
 
 const loading = ref(false)
 const list = ref([])

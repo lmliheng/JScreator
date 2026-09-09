@@ -1,17 +1,22 @@
 <script setup>
+import {ref} from 'vue'
 import { siGithub } from 'simple-icons'
 
 // 全宽页面底部栏：版权 + 托管信息 + GitHub 跳转
 const year = new Date().getFullYear()
 const githubUrl = 'https://github.com/lmliheng'
+
+let foot_text=ref(import.meta.env.VITE_FOOT_TEXT)
+
+
 </script>
 
 <template>
   <footer class="site-footer">
     <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-6 text-center">
-      <span class="text-sm text-faint">JScreator © {{ year }}</span>
+      <span class="text-sm text-faint">JS creator © {{ year }}</span>
       <span class="text-faint">·</span>
-      <span class="text-sm text-faint">由微信云托管提供服务</span>
+      <span class="text-sm text-faint">{{ foot_text }}</span>
       <a
         :href="githubUrl"
         target="_blank"

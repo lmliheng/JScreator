@@ -12,7 +12,7 @@ const router = useRouter()
 const auth = useAuthStore()
 const toast = useToastStore()
 
-const displayName = computed(() => auth.displayName || 'JScreator')
+const displayName = computed(() => auth.displayName || 'JS creator')
 
 // ===== 数据 =====
 const latest = ref([])
@@ -20,7 +20,7 @@ const hot = ref([])
 const bloggers = ref([])
 const loading = ref(true)
 
-const adminUrl = import.meta.env.DEV ? 'http://localhost:8085/' : '/panel/'
+const adminUrl = import.meta.env.VITE_ADMIN_ADDRESS
 
 async function fetchAll() {
   loading.value = true
@@ -57,6 +57,7 @@ function doSearch() {
 function userName(u) {
   return u.name || u.username || '匿名'
 }
+
 function monogram(u) {
   return userName(u).trim().charAt(0).toUpperCase()
 }
@@ -81,12 +82,12 @@ onMounted(fetchAll)
 
 <template>
   <div class="min-h-screen bg-page text-body antialiased">
-    <!-- ===== 顶部导航条（透明悬浮在 Hero 上） ===== -->
+   
     <header class="hero-topbar">
       <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4">
         <RouterLink to="/" class="flex items-center gap-2 text-white">
-          <span class="hero-logo">J</span>
-          <span class="font-extrabold tracking-wide">JScreator 博客</span>
+          <span class="hero-logo">TS</span>
+          <!-- <span class="font-extrabold tracking-wide">JScreator</span> -->
         </RouterLink>
         <nav class="hidden items-center gap-1 sm:flex">
           <RouterLink to="/" class="hero-nav-link" active-class="hero-nav-active" exact-active-class="hero-nav-active">首页</RouterLink>
@@ -134,8 +135,8 @@ onMounted(fetchAll)
       <span class="hero-particle hp4"></span>
 
       <div class="relative z-10 mx-auto max-w-3xl px-4 pb-20 pt-14 text-center sm:pt-20">
-        <h1 class="text-4xl font-extrabold leading-tight text-white sm:text-5xl">JScreator 博客</h1>
-        <p class="mt-4 text-base text-white/75 sm:text-lg">发现优秀博主，阅读优质文章</p>
+        <h1 class="text-4xl font-extrabold leading-tight text-white sm:text-5xl">JS creator</h1>
+        <p class="mt-4 text-base text-white/75 sm:text-lg">发现优秀博主，阅读优质内容</p>
 
         <!-- 搜索框 -->
         <form class="mx-auto mt-8 flex max-w-xl items-center gap-2" @submit.prevent="doSearch">
@@ -186,34 +187,7 @@ onMounted(fetchAll)
         <!-- 首页中部广告位 -->
         <AdSlot position="home_mid" />
 
-        <!-- 热门文章榜 -->
-        <section v-if="hot.length" class="mt-14">
-          <div class="mb-5 flex items-end justify-between">
-            <div>
-              <h2 class="section-title">热门文章</h2>
-              <p class="mt-1 text-sm text-muted">评论最多的热议文章</p>
-            </div>
-          </div>
-          <div class="grid gap-4 md:grid-cols-2">
-            <RouterLink
-              v-for="(a, i) in hot"
-              :key="a.article_id"
-              :to="`/article/${a.article_id}`"
-              class="group flex items-center gap-4 rounded-card border border-line bg-card p-4 transition-shadow hover:shadow-lg"
-            >
-              <span class="hot-rank" :class="i < 3 ? 'hot-rank-top' : ''">{{ i + 1 }}</span>
-              <div class="min-w-0 flex-1">
-                <h3 class="truncate font-bold text-ink group-hover:text-accent">{{ a.title }}</h3>
-                <p class="mt-1 truncate text-xs text-faint">
-                  {{ a.author_name }}<span v-if="a.category_names?.length"> · {{ a.category_names.join(' / ') }}</span>
-                </p>
-              </div>
-              <span class="shrink-0 rounded-tag bg-accent/10 px-2.5 py-1 text-xs font-bold text-accent">
-                💬 {{ a.comment_count }} 评论
-              </span>
-            </RouterLink>
-          </div>
-        </section>
+    
 
         <!-- 博主推荐 -->
         <section v-if="bloggers.length" class="mt-14">
@@ -247,8 +221,8 @@ onMounted(fetchAll)
                 </div>
               </div>
 
-              <p v-if="u.bio" class="line-clamp-2 min-h-[2.5rem] text-sm leading-relaxed text-muted">{{ u.bio }}</p>
-              <p v-else class="min-h-[2.5rem] text-sm text-faint">这位博主还没有写简介。</p>
+              <p v-if="u.bio" class="line-clamp-2 min-h-10 text-sm leading-relaxed text-muted">{{ u.bio }}</p>
+              <p v-else class="min-h-10 text-sm text-faint">这位博主还没有写简介。</p>
 
               <div class="mt-auto flex items-center justify-between">
                 <span class="rounded-tag bg-accent/10 px-2 py-0.5 text-xs text-accent">{{ u.article_count }} 篇文章</span>
@@ -260,6 +234,37 @@ onMounted(fetchAll)
             </div>
           </div>
         </section>
+
+    <!-- 热门文章榜 -->
+        <section v-if="hot.length" class="mt-14">
+          <div class="mb-5 flex items-end justify-between">
+            <div>
+              <h2 class="section-title">热门文章</h2>
+              <p class="mt-1 text-sm text-muted">评论最多的热议文章</p>
+            </div>
+          </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <RouterLink
+              v-for="(a, i) in hot"
+              :key="a.article_id"
+              :to="`/article/${a.article_id}`"
+              class="group flex items-center gap-4 rounded-card border border-line bg-card p-4 transition-shadow hover:shadow-lg"
+            >
+              <span class="hot-rank" :class="i < 3 ? 'hot-rank-top' : ''">{{ i + 1 }}</span>
+              <div class="min-w-0 flex-1">
+                <h3 class="truncate font-bold text-ink group-hover:text-accent">{{ a.title }}</h3>
+                <p class="mt-1 truncate text-xs text-faint">
+                  {{ a.author_name }}<span v-if="a.category_names?.length"> · {{ a.category_names.join(' / ') }}</span>
+                </p>
+              </div>
+              <span class="shrink-0 rounded-tag bg-accent/10 px-2.5 py-1 text-xs font-bold text-accent">
+                💬 {{ a.comment_count }} 评论
+              </span>
+            </RouterLink>
+          </div>
+        </section>
+
+
       </template>
     </main>
 

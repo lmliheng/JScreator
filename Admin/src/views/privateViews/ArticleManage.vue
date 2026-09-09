@@ -49,8 +49,8 @@ const author = ref('')
 const categoryId = ref(null)
 const statusFilter = ref('') // ''=全部，0=草稿，1=已发布，2=仅自己可见
 
-// 博客前端地址：本地开发指向 5173，生产部署同域根路径
-const blogBase = process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:5173'
+// 博客前端地址
+const blogBase = process.env.BLOG_ADDRESS
 
 const categoryList = ref([])
 // 普通用户：/article/mine 不支持 keyword/category 查询，故拉取全量后本地过滤分页
@@ -184,6 +184,7 @@ const handleDelete = (row) => {
 }
 
 const viewArticle = (row) => {
+    console.log(blogBase)
     window.open(`${blogBase}/article/${row.article_id}`, '_blank')
 }
 

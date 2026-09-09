@@ -14,7 +14,6 @@ import i18n from './i18n/index.js'
 const app = createApp(App)
 const pinia = createPinia()
 
-
 pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 app.use(print)

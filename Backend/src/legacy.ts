@@ -1,9 +1,3 @@
-/**
- * legacy 桥——从 root utils/*.js 迁移到 TS 后的统一导出层。
- *
- * 各模块通过本文件获取工具函数，不直接 import legacy-utils/*。
- * dotenv.config() 在模块顶层执行，确保所有下游模块的 process.env 就位。
- */
 import dotenv from 'dotenv';
 import type { Express } from 'express';
 dotenv.config();
@@ -11,6 +5,7 @@ dotenv.config();
 // ── crypto_password ──
 import { ToHash, ComparePassword } from './legacy-utils/crypto-password.js';
 export { ToHash, ComparePassword };
+
 export interface CryptoPasswordModule {
     ToHash: (password: string) => string;
     ComparePassword: (password: string, hashedPassword: string) => boolean;
@@ -37,6 +32,8 @@ export type TokenValidator = (token?: string) => unknown;
 export function loadTokenValidator(): TokenValidator {
     return tokenValidator;
 }
+
+
 export interface TokenCreatorModule {
     tokenCreator: (user: {
         id: number | string;
@@ -44,6 +41,8 @@ export interface TokenCreatorModule {
         [key: string]: unknown;
     }) => string;
 }
+
+
 export function loadTokenCreator(): TokenCreatorModule {
     return { tokenCreator: tokenCreator as TokenCreatorModule['tokenCreator'] };
 }
@@ -108,7 +107,6 @@ export function loadOssUpload(): OssUploadModule {
     return { uploadBuffer: uploadBuffer as OssUploadModule['uploadBuffer'] };
 }
 
-// ── legacy routes（已全部迁移为 TS modules，无遗留路由） ──
 export function registerLegacyRoutes(_app: Express): void {
-    // 所有路由已在 buildApp() 中通过 createXxxRouter() 挂载
+    
 }

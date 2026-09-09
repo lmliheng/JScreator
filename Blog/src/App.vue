@@ -12,7 +12,6 @@ theme.init()
 
 // 路由 meta.layout 控制布局：
 //   layout: 'blank' → 独立访客页（无 AppLayout / 侧边栏），直接渲染 RouterView
-//   其他（含未声明）→ 用 AppLayout 包裹（含左侧 Sidebar）
 const route = useRoute()
 const isBlank = computed(() => route.meta.layout === 'blank')
 </script>

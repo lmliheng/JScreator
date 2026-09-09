@@ -24,6 +24,7 @@ export async function withTransaction<T>(pool: PoolLike, fn: (conn: DbConnection
         await conn.rollback().catch(() => {});
         throw error;
     } finally {
-        await conn.release().catch(() => {});
+        // mysql2/promise 的 release() 是同步方法，不返回 Promise
+        try { conn.release(); } catch { /* 忽略释放异常 */ }
     }
 }
