@@ -1,129 +1,114 @@
 /**
- * 在 TS 入口中加载仓库根目录的 legacy CJS 模块（routes/*、utils/*）。
+ * legacy 桥——从 root utils/*.js 迁移到 TS 后的统一导出层。
  *
- * - 模块顶层先执行 dotenv.config()：legacy 模块在 require 时才读 process.env（如连接池参数），
- *   必须保证环境变量在它们被加载前就位（ESM 静态 import 先于代码执行，故不能放在 server.ts 顶层）。
- *
+ * 各模块通过本文件获取工具函数，不直接 import legacy-utils/*。
+ * dotenv.config() 在模块顶层执行，确保所有下游模块的 process.env 就位。
  */
-import { createRequire } from 'node:module';
-import type { Express, Router } from 'express';
-import type { Server } from 'node:http';
-
-
-const require = createRequire(import.meta.url)
-const dotenv = require('dotenv');
+import dotenv from 'dotenv';
+import type { Express } from 'express';
 dotenv.config();
 
-const LEGACY_ROUTES = [] as const; 
-
-/** 挂载全部 legacy 路由：路由模块导出 Router 函数；api_key_request 等导出 { router } */
-export function registerLegacyRoutes(app: Express): void {
-    for (const name of LEGACY_ROUTES) {
-        const mod = require(`../../routes/${name}.js`) as { router: Router } | Router;
-        const r = typeof mod === 'function' ? (mod as Router) : (mod as { router: Router }).router;
-        app.use(r);
-    }
-}
-
-/**
- * @接口监控interface
- */
-export interface ApiMonitorModule {
-    recordApi: (req: unknown, res: unknown, timeMs: number) => void;
-    registerRoutes: (app: Express) => void;
-    getApiStats: () => Array<{ path: string; count: number; avgTime: number; errorCount: number; lastAt: number }>;
-}
-
-/**
- * 
- * @导入接口
- */
-export function loadApiMonitor(): ApiMonitorModule {
-    return require('../../utils/api_monitor.js') as ApiMonitorModule;
-}
-
-export interface WsServerModule {
-    initWsServer: (server: Server) => void;
-}
-
-export function loadWsServer(): WsServerModule {
-    return require('../../utils/ws_server.js') as WsServerModule;
-}
-
-export type TokenValidator = (token?: string) => unknown;
-
-export function loadTokenValidator(): TokenValidator {
-    const { tokenValidator } = require('../../utils/token_creator.js') as { tokenValidator: TokenValidator };
-    return tokenValidator;
-}
-
+// ── crypto_password ──
+import { ToHash, ComparePassword } from './legacy-utils/crypto-password.js';
+export { ToHash, ComparePassword };
 export interface CryptoPasswordModule {
     ToHash: (password: string) => string;
     ComparePassword: (password: string, hashedPassword: string) => boolean;
 }
-
-/** 密码 SHA256 哈希/比对（必须复用既有实现以兼容存量哈希） */
 export function loadCryptoPassword(): CryptoPasswordModule {
-    return require('../../utils/crypto_password.js') as CryptoPasswordModule;
+    return { ToHash, ComparePassword };
 }
 
+// ── id_creator ──
+import { generateId } from './legacy-utils/id-creator.js';
+export { generateId };
 export interface IdCreatorModule {
     generateId: () => number;
 }
-
-/** ID 生成器（+Date.now()，与 legacy 一致） */
 export function loadIdCreator(): IdCreatorModule {
-    return require('../../utils/id_creator.js') as IdCreatorModule;
+    return { generateId };
 }
 
+// ── token_creator ──
+import { tokenCreator, tokenValidator } from './legacy-utils/token-creator.js';
+export { tokenCreator, tokenValidator };
+export type { TokenPayload } from './legacy-utils/token-creator.js';
+export type TokenValidator = (token?: string) => unknown;
+export function loadTokenValidator(): TokenValidator {
+    return tokenValidator;
+}
 export interface TokenCreatorModule {
-    tokenCreator: (user: { id: number | string; role_id?: number | null; [key: string]: unknown }) => string;
+    tokenCreator: (user: {
+        id: number | string;
+        role_id?: number | null;
+        [key: string]: unknown;
+    }) => string;
 }
-
-/** JWT 签发（token_creator.tokenCreator） */
 export function loadTokenCreator(): TokenCreatorModule {
-    return require('../../utils/token_creator.js') as TokenCreatorModule;
+    return { tokenCreator: tokenCreator as TokenCreatorModule['tokenCreator'] };
 }
 
+// ── api_monitor ──
+import { recordApi, getApiStats, registerRoutes } from './legacy-utils/api-monitor.js';
+export { recordApi, getApiStats, registerRoutes };
+export type { ApiStatItem } from './legacy-utils/api-monitor.js';
+export interface ApiMonitorModule {
+    recordApi: (req: import('express').Request, res: import('express').Response, timeMs: number) => void;
+    registerRoutes: (app: Express) => void;
+    getApiStats: () => import('./legacy-utils/api-monitor.js').ApiStatItem[];
+}
+export function loadApiMonitor(): ApiMonitorModule {
+    return { recordApi, getApiStats, registerRoutes };
+}
+
+// ── emailSender ──
+import { sendVerificationCode, EmailTransporter } from './legacy-utils/email-sender.js';
+export { sendVerificationCode, EmailTransporter };
 export interface EmailSenderModule {
     sendVerificationCode: (to: string, code: string) => Promise<unknown>;
 }
-
-/** 邮件发送（utils/emailSender.js；SMTP 失败时内部吞错，行为与 legacy 一致） */
 export function loadEmailSender(): EmailSenderModule {
-    
-    return require('../../utils/emailSender.js') as EmailSenderModule;
+    return { sendVerificationCode };
 }
 
-
+// ── ai_summary ──
+import { summarizeAndSave } from './legacy-utils/ai-summary.js';
+export { summarizeAndSave };
 export interface AiSummaryUtilsModule {
-    summarizeAndSave: (articleId: number, input: { title: string; content: string }) => Promise<unknown>;
+    summarizeAndSave: (
+        articleId: number,
+        input: { title: string; content: string }
+    ) => Promise<unknown>;
 }
-
 export function loadAiSummaryUtils(): AiSummaryUtilsModule {
-    
-    return require('../../utils/ai_summary.js') as AiSummaryUtilsModule;
+    return { summarizeAndSave: summarizeAndSave as AiSummaryUtilsModule['summarizeAndSave'] };
 }
 
-export interface OssUploadModule {
-    uploadBuffer: (buffer: Buffer, key: string, mime: string) => Promise<string>;
-}
-
-/** OSS 上传（utils/oss/oss.js） */
-export function loadOssUpload(): OssUploadModule {
-    
-    return require('../../utils/oss/oss.js') as OssUploadModule;
-}
-
+// ── llm ──
+import { chat } from './legacy-utils/llm.js';
+export { chat };
+export type { ChatMessage, ChatOptions } from './legacy-utils/llm.js';
 export interface LlmChatModule {
     chat: (
         messages: Array<{ role: string; content: string }>,
         opts?: { model?: string; temperature?: number; max_tokens?: number }
     ) => Promise<string>;
 }
-
-/** LLM 对话（utils/llm.js，OpenAI 兼容协议封装） */
 export function loadLlmChat(): LlmChatModule {
-    
-    return require('../../utils/llm.js') as LlmChatModule;
+    return { chat: chat as LlmChatModule['chat'] };
+}
+
+// ── oss ──
+import { uploadBuffer } from './legacy-utils/oss.js';
+export { uploadBuffer };
+export interface OssUploadModule {
+    uploadBuffer: (buffer: Buffer, key: string, mime: string) => Promise<string>;
+}
+export function loadOssUpload(): OssUploadModule {
+    return { uploadBuffer: uploadBuffer as OssUploadModule['uploadBuffer'] };
+}
+
+// ── legacy routes（已全部迁移为 TS modules，无遗留路由） ──
+export function registerLegacyRoutes(_app: Express): void {
+    // 所有路由已在 buildApp() 中通过 createXxxRouter() 挂载
 }
