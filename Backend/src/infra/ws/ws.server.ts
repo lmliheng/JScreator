@@ -109,7 +109,7 @@ export function initWsServer(server: Server, h: WsHandlers): unknown {
         ws.send(JSON.stringify({ type: 'connected', userId }));
     });
 
-    console.log('[WS] WebSocket 服务已挂载在 /ws（TS 实现）');
+    console.log('[WS] WebSocket 服务已挂载在 /ws');
     return wss;
 }
 

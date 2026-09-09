@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import type { NextFunction, Request, Response } from 'express';
-import { ALLOWED_ORIGINS } from './config/env.js';
+
 import { loadApiMonitor, registerLegacyRoutes } from './legacy.js';
 import { errorHandler } from './common/errors.js';
 import { createAuthRouter } from './modules/auth/index.js';
@@ -23,14 +23,21 @@ import { createSystemmonRouter } from './modules/systemmon/index.js';
 import { createBackupRouter } from './modules/backup/index.js';
 import { userDao } from './modules/user/user.dao.js';
 
+
+
 export function buildApp(): express.Express {
+
+    const allowedOrigins = process.env.FRONTEND_URLS
+        ? process.env.FRONTEND_URLS.split(',').map(s => s.trim())
+        : [];
+    console.log('支持前端地址：',allowedOrigins)
     const app = express();
 
     app.use(
         cors({
             origin(origin, callback) {
                 // 无 origin（同源/非浏览器/curl 等）直接放行；不允许的来源不返回 CORS 头
-                if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+                if (!origin || allowedOrigins.includes(origin)) {
                     return callback(null, true);
                 }
                 return callback(null, false);

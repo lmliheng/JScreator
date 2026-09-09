@@ -8,7 +8,7 @@ RUN npm ci
 
 COPY . .
 
-# 编译 Backend TS -> Backend/dist，然后移除 devDependencies
+# 编译 + 删除dev包
 RUN npm run ts:build && npm prune --omit=dev
 
 FROM node:20-alpine
@@ -17,6 +17,7 @@ ENV NODE_ENV=production
 
 COPY --from=build /app ./
 
+# 外部访问(宿主机入口是7000,防止80端口已被占用)7000，转发到docker的80端口
 ENV PORT=80
 EXPOSE 80
 
