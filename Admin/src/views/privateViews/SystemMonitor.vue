@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { requestSystemMonitor, requestApiStats, requestBackupDownload } from '@/composables/useRequest'
 import { ElMessage } from 'element-plus'

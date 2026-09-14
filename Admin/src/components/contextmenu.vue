@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted, onUnmounted,defineEmits,defineProps } from 'vue'
 import { usePathTagStore } from '@/store/pathTag'
 import { useRoute } from 'vue-router'

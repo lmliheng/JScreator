@@ -1,4 +1,4 @@
-<script>
+<script setup lang="ts">
 // JavaScript 钩子逻辑...
 </script>
 

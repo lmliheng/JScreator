@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { reactive, ref, onBeforeUnmount } from 'vue'
 import { register, sendEmailCode, emailLogin } from '../composables/useRequest'
 import { useRouter } from 'vue-router'

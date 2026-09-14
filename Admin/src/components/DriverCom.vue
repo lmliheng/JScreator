@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";

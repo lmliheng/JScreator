@@ -1,5 +1,4 @@
-<script setup>
-import { ref } from 'vue'
+<script setup lang="ts">
 import { RouterView } from 'vue-router' 
 </script>
 <template>

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
     import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 
     import Editor from '@toast-ui/editor';

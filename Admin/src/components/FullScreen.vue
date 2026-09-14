@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 // import { screenfull } from '@composables/useFullScreen'
 import screenfull from 'screenfull'

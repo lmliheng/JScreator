@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 // 这个场景搜索路由不太适合
 import { onMounted, ref, nextTick, watch } from 'vue'
 

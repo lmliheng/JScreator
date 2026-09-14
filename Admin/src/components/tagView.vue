@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed,watch } from 'vue'
 import { usePathTagStore } from '@/store/pathTag'
 import { useRoute } from 'vue-router'
@@ -11,7 +11,6 @@ const pathTagStore = usePathTagStore()
 const pathTagsList = computed(() => pathTagStore.pathTagsList)
 
 const isShow = ref(false)
-
 
 const contextmenuLocationStyle = ref({
     top: '0',
