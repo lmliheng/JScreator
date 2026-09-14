@@ -8,7 +8,8 @@ export const checkTokenUsed = () => {
     const authStore = useAuthStore()
     const tokenTime = authStore.tokenTime
     const nowTime = new Date().toLocaleString()
-    const diffTime = new Date(nowTime) - new Date(tokenTime)
+    const diffTime = 0
+    //new Date(nowTime) - new Date(tokenTime)
     if (diffTime > 1000 * 60) {
         loginOut()
     }

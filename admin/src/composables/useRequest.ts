@@ -1,7 +1,5 @@
-import type { st } from 'vue-router/dist/index-D7ja2BKs.js'
-import { api } from './useAxiosConfig'
-// import md5 from 'md5'
 
+import { api } from './useAxiosConfig'
 
 export const login = (account:string, password:string) => api({
     url: '/sys/login',
@@ -9,7 +7,6 @@ export const login = (account:string, password:string) => api({
     data: {
         username: account,
         password: password
-        //md5(password)
     }
 })
 
@@ -22,7 +19,7 @@ export const register = (data) => api({
 
 
 // 发送邮箱验证码
-export const sendEmailCode = (email) => api({
+export const sendEmailCode = (email:string) => api({
     url: '/email/send-code',
     method: 'post',
     data: { email }
@@ -34,6 +31,7 @@ export const emailLogin = (email, code) => api({
     method: 'post',
     data: { email, code }
 })
+
 
 export const requestUserInfo = () => api({
     url: '/sys/profile',
@@ -63,14 +61,20 @@ export const requestPermissionList = () => api({
     method: 'get'
 })
 
-
-// ============ 用户管理（管理员） ============
+/**
+ * @Admin
+ * 管理员-用户管理-添加
+ */
 export const requestUserAdd = (data) => api({
     url: '/user-manage/add',
     method: 'post',
     data
 })
 
+/**
+ * @Admin
+ * 管理员-用户管理-更新
+ */
 export const requestUserUpdate = (data) => api({
     url: '/user-manage/update',
     method: 'put',
@@ -458,6 +462,7 @@ export const requestOAuthClientDelete = (id) => api({
     url: `/oauth/admin/clients/${id}`,
     method: 'delete'
 })
+
 
 // 数据库备份下载（仅 admin）—— 需要 blob 响应，不走响应拦截器解包；放宽超时（导出可能较慢）
 export const requestBackupDownload = () => {
