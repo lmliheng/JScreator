@@ -6,7 +6,7 @@
     "author": "lmliheng",
     "license": "MIT",
     "scripts": {
-        "ts:build": "tsc -p tsconfig.json",
+        "build:ts": "tsc -p tsconfig.json",
         "start:ts": "node Backend/dist/server.js",
         "watch:ts": "tsc -p tsconfig.json --watch",
         "test:ts": "tsc -p tsconfig.json && node --test --test-force-exit Backend/dist/api.test.js Backend/dist/contract.test.js Backend/dist/db/transaction.test.js Backend/dist/common/errors.test.js Backend/dist/common/response.test.js Backend/dist/common/middleware/auth.test.js Backend/dist/modules/auth/auth.service.test.js Backend/dist/modules/article/article.service.test.js",

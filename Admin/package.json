@@ -15,21 +15,21 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@toast-ui/editor": "^3.2.2",
     "@vueuse/core": "^14.4.0",
+    "axios": "^1.15.2",
+    "driver.js": "^1.4.0",
+    "element-plus": "^2.13.7",
     "naive-ui": "^2.45.3",
     "pinia": "^4.0.2",
     "pinia-plugin-persistedstate": "^4.7.1",
-    "vue": "^3.5.40",
-    "vue-router": "^5.2.0",
     "qrcode": "^1.5.4",
     "screenfull": "^6.0.2",
     "sortablejs": "^1.15.7",
+    "vue": "^3.5.40",
     "vue-i18n": "^11.4.0",
-    "vue3-print-nb": "^0.1.4",
-    "@toast-ui/editor": "^3.2.2",
-    "axios": "^1.15.2",
-    "driver.js": "^1.4.0",
-    "element-plus": "^2.13.7"
+    "vue-router": "^5.2.0",
+    "vue3-print-nb": "^0.1.4"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",

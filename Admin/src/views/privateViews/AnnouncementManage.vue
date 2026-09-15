@@ -93,6 +93,8 @@ import {
     requestAnnounceStatus,
     requestAnnounceDelete
 } from '../../composables/useRequest'
+import {formatTime}from '@/composables/useTool'
+
 
 const loading = ref(false)
 const list = ref([])
@@ -120,7 +122,7 @@ const fetchList = async () => {
         })
         list.value = res.data.list || []
         total.value = res.data.total || 0
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '获取公告列表失败')
     } finally {
         loading.value = false
@@ -132,13 +134,13 @@ const handleSearch = () => {
     fetchList()
 }
 
-const handleSizeChange = (val) => {
+const handleSizeChange = (val:any) => {
     pageSize.value = val
     page.value = 1
     fetchList()
 }
 
-const handleCurrentChange = (val) => {
+const handleCurrentChange = (val:any) => {
     page.value = val
     fetchList()
 }
@@ -175,7 +177,7 @@ const submitForm = async () => {
         }
         dialogVisible.value = false
         fetchList()
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '保存失败')
     } finally {
         saving.value = false

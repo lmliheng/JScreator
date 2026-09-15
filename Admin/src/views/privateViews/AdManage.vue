@@ -2,15 +2,10 @@
     <div>
         <div class="toolbar">
             <div class="toolbar-filters">
-                <el-input
-                    v-model="keyword"
-                    placeholder="搜索广告标题"
-                    clearable
-                    style="width: 200px; margin-right: 8px"
-                    @keyup.enter="handleSearch"
-                    @clear="handleSearch"
-                />
-                <el-select v-model="positionFilter" placeholder="投放位置" clearable style="width: 160px; margin-right: 8px" @change="handleSearch">
+                <el-input v-model="keyword" placeholder="搜索广告标题" clearable style="width: 200px; margin-right: 8px"
+                    @keyup.enter="handleSearch" @clear="handleSearch" />
+                <el-select v-model="positionFilter" placeholder="投放位置" clearable style="width: 160px; margin-right: 8px"
+                    @change="handleSearch">
                     <el-option label="文章正文顶部" value="article_top" />
                     <el-option label="文章评论区上方" value="article_bottom" />
                     <el-option label="首页中部横幅" value="home_mid" />
@@ -54,7 +49,8 @@
             <el-table-column align="center" label="操作" width="240">
                 <template #default="scope">
                     <el-button type="primary" size="small" @click="openEdit(scope.row)">编辑</el-button>
-                    <el-button :type="scope.row.status === 1 ? 'warning' : 'success'" size="small" @click="toggleStatus(scope.row)">
+                    <el-button :type="scope.row.status === 1 ? 'warning' : 'success'" size="small"
+                        @click="toggleStatus(scope.row)">
                         {{ scope.row.status === 1 ? '停用' : '启用' }}
                     </el-button>
                     <el-button type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
@@ -63,16 +59,9 @@
         </el-table>
 
         <div class="pagination">
-            <el-pagination
-                background
-                layout="total, sizes, prev, pager, next, jumper"
-                :total="total"
-                :current-page="page"
-                :page-size="pageSize"
-                :page-sizes="[10, 20, 50]"
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange"
-            />
+            <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+                :current-page="page" :page-size="pageSize" :page-sizes="[10, 20, 50]" @size-change="handleSizeChange"
+                @current-change="handleCurrentChange" />
         </div>
 
         <!-- 新增/编辑弹窗 -->
@@ -90,10 +79,12 @@
                 <template v-if="form.type === 'image'">
                     <el-form-item label="图片">
                         <div class="avatar-edit-row">
-                            <el-image v-if="form.image_url" :src="form.image_url" style="width: 120px; height: 60px; border-radius: 6px" fit="cover" />
+                            <el-image v-if="form.image_url" :src="form.image_url"
+                                style="width: 120px; height: 60px; border-radius: 6px" fit="cover" />
                             <el-input v-model="form.image_url" placeholder="图片 URL 或上传" clearable style="flex: 1" />
                             <el-button :loading="uploading" @click="triggerUpload">上传</el-button>
-                            <input ref="uploadInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden-file" @change="handleUpload" />
+                            <input ref="uploadInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                                class="hidden-file" @change="handleUpload" />
                         </div>
                     </el-form-item>
                 </template>
@@ -119,7 +110,8 @@
                     <el-input-number v-model="form.sort_order" :min="0" style="width: 100%" />
                 </el-form-item>
                 <el-form-item label="状态">
-                    <el-switch v-model="form.status" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="停用" />
+                    <el-switch v-model="form.status" :active-value="1" :inactive-value="0" active-text="启用"
+                        inactive-text="停用" />
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -131,7 +123,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+
+import { ref, reactive, onMounted, type Reactive, type Ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
     requestAdList,
@@ -139,12 +132,14 @@ import {
     requestAdAdd,
     requestAdUpdate,
     requestAdStatus,
-    requestAdDelete
+    requestAdDelete,
+    type AdDetail,type PositionKey
 } from '../../composables/useRequest'
 import { api } from '../../composables/useAxiosConfig'
+import {formatTime}from '@/composables/useTool'
 
 const loading = ref(false)
-const list = ref([])
+const list:Ref<AdDetail[]> = ref([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
@@ -154,7 +149,22 @@ const positionFilter = ref('')
 const dialogVisible = ref(false)
 const dialogMode = ref('add')
 const saving = ref(false)
-const form = reactive({
+
+// 敲定defalt='scope'的类型
+interface AdItem {
+  id: number
+  title: string
+  type: 'image' | 'text'
+  position: string
+  sort_order: number
+  status: number
+  click_count: number
+  created_at: string
+  // 可能有其他字段，按需添加
+}
+
+
+const form: Reactive<AdDetail> = reactive({
     id: null,
     title: '',
     type: 'image',
@@ -167,14 +177,16 @@ const form = reactive({
     status: 1
 })
 
-const POSITION_LABELS = {
+
+const POSITION_LABELS: Record<PositionKey, string> = {
     article_top: '文章正文顶部',
     article_bottom: '文章评论区上方',
     home_mid: '首页中部横幅',
 }
-const positionLabel = (p) => POSITION_LABELS[p] || p
 
-const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
+const positionLabel = (p: string) => POSITION_LABELS[p as PositionKey] || p
+
+
 
 const fetchList = async () => {
     loading.value = true
@@ -185,27 +197,30 @@ const fetchList = async () => {
             keyword: keyword.value.trim() || undefined,
             position: positionFilter.value || undefined
         })
+
         list.value = res.data.list || []
         total.value = res.data.total || 0
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '获取广告列表失败')
     } finally {
         loading.value = false
     }
 }
 
+
 const handleSearch = () => {
     page.value = 1
     fetchList()
 }
 
-const handleSizeChange = (val) => {
+const handleSizeChange = (val: number) => {
     pageSize.value = val
     page.value = 1
     fetchList()
 }
 
-const handleCurrentChange = (val) => {
+
+const handleCurrentChange = (val: number) => {
     page.value = val
     fetchList()
 }
@@ -231,7 +246,7 @@ const openAdd = () => {
     dialogVisible.value = true
 }
 
-const openEdit = async (row) => {
+const openEdit = async (row:AdItem) => {
     dialogMode.value = 'edit'
     resetForm()
     dialogVisible.value = true
@@ -250,7 +265,7 @@ const openEdit = async (row) => {
             sort_order: Number(d.sort_order) || 0,
             status: Number(d.status) === 1 ? 1 : 0
         })
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '加载广告详情失败')
     }
 }
@@ -260,7 +275,7 @@ const submitForm = async () => {
         ElMessage.warning('请填写广告标题')
         return
     }
-    if (form.type === 'image' && !form.image_url.trim()) {
+    if (form.type === 'image' && !form.image_url!.trim()) {
         ElMessage.warning('图片广告请填写图片')
         return
     }
@@ -285,30 +300,34 @@ const submitForm = async () => {
             await requestAdAdd(payload)
             ElMessage.success('新增广告成功')
         } else {
-            await requestAdUpdate(form.id, payload)
+            await requestAdUpdate(form.id!, payload)
             ElMessage.success('更新广告成功')
         }
         dialogVisible.value = false
         fetchList()
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '保存失败')
     } finally {
         saving.value = false
     }
 }
 
-const toggleStatus = async (row) => {
+
+
+const toggleStatus = async (row:AdItem) => {
     const next = row.status === 1 ? 0 : 1
     try {
         await requestAdStatus(row.id, next)
         ElMessage.success(next === 1 ? '已启用' : '已停用')
         fetchList()
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '操作失败')
     }
 }
 
-const handleDelete = (row) => {
+
+
+const handleDelete = (row: AdItem) => {
     ElMessageBox.confirm(`确定删除广告「${row.title}」吗？`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -318,27 +337,30 @@ const handleDelete = (row) => {
             await requestAdDelete(row.id)
             ElMessage.success('删除成功')
             fetchList()
-        } catch (e) {
+        } catch (e:any) {
             ElMessage.error(e?.response?.data?.message || '删除失败')
         }
-    }).catch(() => {})
+    }).catch(() => { })
 }
 
-// ===== 图片上传（复用 OSS 接口） =====
-const uploadInput = ref(null)
-const uploading = ref(false)
+/**
+ * @图片上传（复用 OSS 接口）
+ */
+const uploadInput: Ref<HTMLInputElement | null> = ref(null)
+const uploading: Ref<boolean> = ref(false)
 const triggerUpload = () => uploadInput.value && uploadInput.value.click()
-const handleUpload = async (e) => {
-    const file = e.target.files && e.target.files[0]
+const handleUpload = async (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const file = target.files?.[0]
     if (!file) return
     if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
         ElMessage.warning('仅支持 jpg/png/webp/gif 图片')
-        e.target.value = ''
+        target.value = ''
         return
     }
     if (file.size > 5 * 1024 * 1024) {
         ElMessage.warning('图片不能超过 5MB')
-        e.target.value = ''
+        target.value = ''
         return
     }
     uploading.value = true
@@ -346,18 +368,27 @@ const handleUpload = async (e) => {
         const fd = new FormData()
         fd.append('image', file)
         // 不手动设置 Content-Type：浏览器自动生成带 boundary 的 multipart 头（axios 推荐）
-        const res = await api.post('/upload/image', fd)
+
+        interface UploadResponse {
+            data?: {
+                url?: string
+            }
+            message?: string
+        }
+
+        const res: UploadResponse = await api.post('/upload/image', fd)
+
         if (res && res.data && res.data.url) {
             form.image_url = res.data.url
             ElMessage.success('图片上传成功')
         } else {
             ElMessage.error((res && res.message) || '上传失败')
         }
-    } catch (err) {
+    } catch (err:any) {
         ElMessage.error(err?.response?.data?.message || '上传失败')
     } finally {
         uploading.value = false
-        e.target.value = ''
+        target.value = ''
     }
 }
 
@@ -371,22 +402,27 @@ onMounted(fetchList)
     align-items: center;
     margin-bottom: 16px;
 }
+
 .toolbar-filters {
     display: flex;
     align-items: center;
 }
+
 .toolbar-actions {
     display: flex;
     align-items: center;
 }
+
 .pagination {
     margin-top: 20px;
     display: flex;
     justify-content: flex-end;
 }
+
 .hidden-file {
     display: none;
 }
+
 .avatar-edit-row {
     display: flex;
     align-items: center;

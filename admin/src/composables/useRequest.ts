@@ -1,7 +1,37 @@
 
 import { api } from './useAxiosConfig'
 
-export const login = (account:string, password:string) => api({
+interface BaseResponse {
+    code: string,
+    success: boolean,
+    message: string
+}
+
+interface LoginRequest {
+    accout: string,
+    password: string
+}
+
+interface LoginResponse extends BaseResponse {
+    token: string
+    user_info: UserInfo
+}
+
+interface UserInfo {
+    id: number
+    username: string
+    email: string
+    role_id: number
+    avatar: string
+    bio: string
+    area: string
+    name: string
+    vipLevel: string
+    checkinDay: number
+    login_time: string
+}
+
+export const login = (account: string, password: string): Promise<LoginResponse> => api({
     url: '/sys/login',
     method: 'post',
     data: {
@@ -19,7 +49,7 @@ export const register = (data) => api({
 
 
 // 发送邮箱验证码
-export const sendEmailCode = (email:string) => api({
+export const sendEmailCode = (email: string) => api({
     url: '/email/send-code',
     method: 'post',
     data: { email }
@@ -346,25 +376,63 @@ export const requestFavoriteManageDelete = (id) => api({
     method: 'delete'
 })
 
-// ============ 广告管理（仅 admin） ============
-export const requestAdList = (params) => api({
+interface AdListRequest {
+    page: number, // 页数
+    pageSize: number, // 一页的广告数量
+    keyword: string | undefined,  //按关键词查询
+    position: string | undefined  //按位置查询
+}
+export type PositionKey = 'article_top' | 'article_bottom' | 'home_mid'
+export interface AdDetail {
+    id?: number | null
+    title: string
+    type: 'image' | 'text'
+    image_url: string | null
+    text_title: string
+    text_desc: string
+    link_url: string
+    position: PositionKey
+    sort_order: number
+    status: number
+
+    click_count?: number
+    created_at?: string
+    updated_at?: string
+}
+interface AdListRespone extends BaseResponse {
+    data: {
+        list: AdDetail[]
+        total: number
+        page: number
+        pageSize: number
+    }
+}
+interface AdDateilResponse extends BaseResponse {
+    data: AdDetail
+}
+
+/**
+ * 
+ * @广告
+ */
+export const requestAdList = (params: AdListRequest): Promise<AdListRespone> => api({
     url: '/ad/admin/list',
     method: 'get',
     params
 })
 
-export const requestAdDetail = (id) => api({
+export const requestAdDetail = (id: number): Promise<AdDateilResponse> => api({
     url: `/ad/admin/detail/${id}`,
     method: 'get'
 })
 
-export const requestAdAdd = (data) => api({
+export const requestAdAdd = (data: AdDetail) => api({
     url: '/ad/admin/add',
     method: 'post',
     data
 })
 
-export const requestAdUpdate = (id, data) => api({
+export const requestAdUpdate = (id: number, data: AdDetail) => api({
     url: `/ad/admin/update/${id}`,
     method: 'put',
     data
@@ -376,12 +444,16 @@ export const requestAdStatus = (id, status) => api({
     data: { status }
 })
 
-export const requestAdDelete = (id) => api({
+export const requestAdDelete = (id: number) => api({
     url: `/ad/admin/delete/${id}`,
     method: 'delete'
 })
 
-// ============ 公告管理（仅 admin） ============
+
+/**
+ * 
+ * @公告管理
+ */
 export const requestAnnounceList = (params) => api({
     url: '/announcement/admin/list',
     method: 'get',
