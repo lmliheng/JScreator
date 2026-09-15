@@ -18,7 +18,7 @@ api.interceptors.request.use(
         }
         if (localStorage.getItem('auth')) {
             let auth = localStorage.getItem('auth')
-            config.headers.Authorization = 'Bearer ' + JSON.parse(auth).token
+            config.headers.Authorization = 'Bearer ' + JSON.parse(auth!).token
         }
         return config
     },

@@ -190,7 +190,7 @@ const toggleStatus = async (row) => {
         await requestAnnounceStatus(row.id, next)
         ElMessage.success(next === 1 ? '已启用' : '已停用')
         fetchList()
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '操作失败')
     }
 }
@@ -205,7 +205,7 @@ const handleDelete = (row) => {
             await requestAnnounceDelete(row.id)
             ElMessage.success('删除成功')
             fetchList()
-        } catch (e) {
+        } catch (e:any) {
             ElMessage.error(e?.response?.data?.message || '删除失败')
         }
     }).catch(() => {})
