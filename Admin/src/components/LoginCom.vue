@@ -30,7 +30,7 @@ const emailForm = reactive({
 const emailLoading = ref(false)
 const sending = ref(false)
 const countdown = ref(0)
-let sendTimer = null
+let sendTimer:number = 0
 
 const submitForm = async () => {
     try {
@@ -63,7 +63,9 @@ async function sendCode() {
         countdown.value = 60
         sendTimer = setInterval(() => {
             countdown.value--
-            if (countdown.value <= 0) clearInterval(sendTimer)
+            if (countdown.value <= 0) {
+                clearInterval(sendTimer)
+            }
         }, 1000)
     } catch (e) {
         ElMessage.error('发送失败')

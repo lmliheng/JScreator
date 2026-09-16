@@ -18,14 +18,14 @@ const getPermissionList = async () => {
     try {
         const res = await requestPermissionList()
         permissionList.value = res.data.list || []
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '获取权限列表失败')
     } finally {
         loading.value = false
     }
 }
 
-const openEdit = (row) => {
+const openEdit = (row: any) => {
     Object.assign(form, {
         permission_id: row.permission_id,
         permission_name: row.permission_name,
@@ -48,7 +48,7 @@ const submitForm = async () => {
         ElMessage.success('修改权限成功')
         dialogVisible.value = false
         getPermissionList()
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '修改失败')
     }
 }

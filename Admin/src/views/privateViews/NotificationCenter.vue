@@ -7,16 +7,16 @@ import {
 } from '@/composables/useRequest'
 
 const loading = ref(false)
-const list = ref([])
+const list = ref<any[]>([])
 
 // 详情弹窗
 const dialogVisible = ref(false)
-const current = ref(null)
+const current = ref<any>(null)
 
-const typeMap = { system: '系统', announcement: '公告', reminder: '提醒' }
-const typeTagMap = { system: 'danger', announcement: 'success', reminder: 'warning' }
-const importanceMap = { high: '高', medium: '中', low: '低' }
-const importanceTagMap = { high: 'danger', medium: 'warning', low: 'info' }
+const typeMap: Record<string, string> = { system: '系统', announcement: '公告', reminder: '提醒' }
+const typeTagMap: Record<string, string> = { system: 'danger', announcement: 'success', reminder: 'warning' }
+const importanceMap: Record<string, string> = { high: '高', medium: '中', low: '低' }
+const importanceTagMap: Record<string, string> = { high: 'danger', medium: 'warning', low: 'info' }
 
 const unreadCount = computed(() => list.value.filter(item => Number(item.is_read) === 0).length)
 
@@ -37,7 +37,7 @@ const getList = async () => {
 }
 
 // 点击查看：弹 dialog 并标记已读
-const openDetail = async (row) => {
+const openDetail = async (row: any) => {
     current.value = row
     dialogVisible.value = true
     if (Number(row.is_read) === 0) {

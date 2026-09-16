@@ -15,13 +15,13 @@ const isAdmin = computed(() => Number(authStore.userInfo?.user_detail?.role_id) 
 const form = reactive({
     title: '',
     content: '',
-    target_type: 'all',
-    target_id: null,
+    target_type: 'all' as 'all' | 'user' | 'role',
+    target_id: null as number | null,
     type: 'announcement',
-    importance: 'medium'
+    importance: 'medium' as 'low' | 'medium' | 'high'
 })
 
-const list = ref([])
+const list = ref<any[]>([])
 const loading = ref(false)
 const publishing = ref(false)
 
@@ -29,20 +29,20 @@ const publishing = ref(false)
 const editVisible = ref(false)
 const editLoading = ref(false)
 const editForm = reactive({
-    notification_id: null,
+    notification_id: null as number | null,
     title: '',
     content: '',
-    target_type: 'all',
-    target_id: null,
+    target_type: 'all' as 'all' | 'user' | 'role',
+    target_id: null as number | null,
     type: 'announcement',
-    importance: 'medium'
+    importance: 'medium' as 'low' | 'medium' | 'high'
 })
 
-const typeMap = { system: '系统', announcement: '公告', reminder: '提醒' }
-const typeTagMap = { system: 'danger', announcement: 'success', reminder: 'warning' }
-const importanceMap = { high: '高', medium: '中', low: '低' }
-const importanceTagMap = { high: 'danger', medium: 'warning', low: 'info' }
-const targetTypeMap = { all: 'target_all', user: 'target_user', role: 'target_role' }
+const typeMap: Record<string, string> = { system: '系统', announcement: '公告', reminder: '提醒' }
+const typeTagMap: Record<string, string> = { system: 'danger', announcement: 'success', reminder: 'warning' }
+const importanceMap: Record<string, string> = { high: '高', medium: '中', low: '低' }
+const importanceTagMap: Record<string, string> = { high: 'danger', medium: 'warning', low: 'info' }
+const targetTypeMap: Record<string, string> = { all: 'target_all', user: 'target_user', role: 'target_role' }
 
 const getList = async () => {
     loading.value = true
@@ -96,7 +96,7 @@ const handlePublish = async () => {
     }
 }
 
-const openEdit = (row) => {
+const openEdit = (row: any) => {
     Object.assign(editForm, {
         notification_id: row.notification_id,
         title: row.title,
@@ -132,14 +132,14 @@ const submitEdit = async () => {
         ElMessage.success('更新成功')
         editVisible.value = false
         getList()
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '更新失败')
     } finally {
         editLoading.value = false
     }
 }
 
-const handleDelete = (row) => {
+const handleDelete = (row: any) => {
     ElMessageBox.confirm('确定删除该通知吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',

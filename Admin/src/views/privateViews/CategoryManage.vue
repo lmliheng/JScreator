@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted,type Ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
     requestArticleCategoryList,
     requestArticleCategoryAdd,
     requestArticleCategoryUpdate,
-    requestArticleCategoryDelete
+    requestArticleCategoryDelete,
+    type CategoryItem
+
 } from '@/composables/useRequest'
 
+import { formatTime } from '@/composables/useTool'
+
 const loading = ref(false)
-const list = ref([])
+const list:Ref<CategoryItem[]> = ref([])
 
 const getList = async () => {
     loading.value = true
@@ -20,7 +24,7 @@ const getList = async () => {
         } else {
             ElMessage.error(res.message || '获取分类列表失败')
         }
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '获取分类列表失败')
     } finally {
         loading.value = false
@@ -31,16 +35,16 @@ const getList = async () => {
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增分类')
 const saving = ref(false)
-const form = reactive({ category_id: null, category_name: '' })
+const form = reactive({ category_id:0, category_name: '' })
 
 const openAdd = () => {
-    form.category_id = null
+    form.category_id =0
     form.category_name = ''
     dialogTitle.value = '新增分类'
     dialogVisible.value = true
 }
 
-const openEdit = (row) => {
+const openEdit = (row:CategoryItem) => {
     form.category_id = row.category_id
     form.category_name = row.category_name
     dialogTitle.value = '编辑分类'
@@ -68,7 +72,7 @@ const submit = async () => {
         } else {
             ElMessage.error(res.message || '操作失败')
         }
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '操作失败')
     } finally {
         saving.value = false
@@ -76,7 +80,7 @@ const submit = async () => {
 }
 
 // 删除
-const handleDelete = (row) => {
+const handleDelete = (row:CategoryItem) => {
     ElMessageBox.confirm(`确定删除分类「${row.category_name}」吗？`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -91,14 +95,13 @@ const handleDelete = (row) => {
                 } else {
                     ElMessage.error(res.message || '删除失败')
                 }
-            } catch (e) {
+            } catch (e:any) {
                 ElMessage.error(e?.response?.data?.message || '删除失败')
             }
         })
         .catch(() => {})
 }
 
-const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
 
 onMounted(getList)
 </script>

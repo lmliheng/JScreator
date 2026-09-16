@@ -53,7 +53,7 @@ onMounted(() => {
 <template>
  
   <el-menu
-    class="el-menu-vertical-demo"
+    class="el-menu-vertical-demo side-menu"
     :router=true
     :default-active="props.routePath"  
     :collapse="props.isCollapse"
@@ -151,6 +151,17 @@ height: 90px;
   font-size: 16px;
   font-weight: bold;
   font-family: 'logo-en';
+}
+
+
+.side-menu {
+  height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+.side-menu::-webkit-scrollbar {
+  display: none; /* Chrome / Safari */
 }
 
 </style>

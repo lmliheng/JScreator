@@ -1,4 +1,3 @@
-
 const methodMap = [
 	[
 		'requestFullscreen',
@@ -16,7 +15,6 @@ const methodMap = [
 		'webkitFullscreenEnabled',
 		'webkitfullscreenchange',
 		'webkitfullscreenerror',
-
 	],
 	// Old WebKit
 	[
@@ -26,7 +24,6 @@ const methodMap = [
 		'webkitCancelFullScreen',
 		'webkitfullscreenchange',
 		'webkitfullscreenerror',
-
 	],
 	[
 		'mozRequestFullScreen',
@@ -46,37 +43,59 @@ const methodMap = [
 	],
 ];
 
+interface NativeAPI {
+	requestFullscreen: string;
+	exitFullscreen: string;
+	fullscreenElement: string;
+	fullscreenEnabled: string;
+	fullscreenchange: string;
+	fullscreenerror: string;
+}
+
 const nativeAPI = (() => {
 	if (typeof document === 'undefined') {
 		return false;
 	}
 
-	const unprefixedMethods = methodMap[0];
-	const returnValue = {};
+	const unprefixedMethods = methodMap[0]!;
+	const returnValue: Record<string, string> = {};
 
 	for (const methodList of methodMap) {
 		const exitFullscreenMethod = methodList?.[1];
-		if (exitFullscreenMethod in document) {
+		if (exitFullscreenMethod && exitFullscreenMethod in document) {
 			for (const [index, method] of methodList.entries()) {
-				returnValue[unprefixedMethods[index]] = method;
+				returnValue[unprefixedMethods[index]!] = method;
 			}
 
-			return returnValue;
+			return returnValue as unknown as NativeAPI;
 		}
 	}
 
 	return false;
 })();
 
-const eventNameMap = {
+const eventNameMap: Record<string, string | undefined> = nativeAPI ? {
 	change: nativeAPI.fullscreenchange,
 	error: nativeAPI.fullscreenerror,
-};
+} : { change: undefined, error: undefined };
 
-let screenfull = {
-	
+interface Screenfull {
+	request: (element?: HTMLElement, options?: any) => Promise<void>;
+	exit: () => Promise<void>;
+	toggle: (element?: HTMLElement, options?: any) => Promise<void>;
+	onchange: (callback: EventListener) => void;
+	onerror: (callback: EventListener) => void;
+	on: (event: string, callback: EventListener) => void;
+	off: (event: string, callback: EventListener) => void;
+	raw: typeof nativeAPI;
+	isFullscreen?: boolean;
+	element?: Element;
+	isEnabled?: boolean;
+}
+
+let screenfull: Screenfull = {
 	request(element = document.documentElement, options) {
-		return new Promise((resolve, reject) => {
+		return new Promise<void>((resolve, reject) => {
 			const onFullScreenEntered = () => {
 				screenfull.off('change', onFullScreenEntered);
 				resolve();
@@ -84,7 +103,12 @@ let screenfull = {
 
 			screenfull.on('change', onFullScreenEntered);
 
-			const returnPromise = element[nativeAPI.requestFullscreen](options);
+			if (!nativeAPI) {
+				reject(new Error('Fullscreen API not supported'));
+				return;
+			}
+
+			const returnPromise = (element as any)[nativeAPI.requestFullscreen](options);
 
 			if (returnPromise instanceof Promise) {
 				returnPromise.then(onFullScreenEntered).catch(reject);
@@ -92,7 +116,7 @@ let screenfull = {
 		});
 	},
 	exit() {
-		return new Promise((resolve, reject) => {
+		return new Promise<void>((resolve, reject) => {
 			if (!screenfull.isFullscreen) {
 				resolve();
 				return;
@@ -105,29 +129,34 @@ let screenfull = {
 
 			screenfull.on('change', onFullScreenExit);
 
-			const returnPromise = document[nativeAPI.exitFullscreen]();
+			if (!nativeAPI) {
+				reject(new Error('Fullscreen API not supported'));
+				return;
+			}
+
+			const returnPromise = (document as any)[nativeAPI.exitFullscreen]();
 
 			if (returnPromise instanceof Promise) {
 				returnPromise.then(onFullScreenExit).catch(reject);
 			}
 		});
 	},
-	toggle(element, options) {
+	toggle(element?: HTMLElement, options?: any) {
 		return screenfull.isFullscreen ? screenfull.exit() : screenfull.request(element, options);
 	},
-	onchange(callback) {
+	onchange(callback: EventListener) {
 		screenfull.on('change', callback);
 	},
-	onerror(callback) {
+	onerror(callback: EventListener) {
 		screenfull.on('error', callback);
 	},
-	on(event, callback) {
+	on(event: string, callback: EventListener) {
 		const eventName = eventNameMap[event];
 		if (eventName) {
 			document.addEventListener(eventName, callback, false);
 		}
 	},
-	off(event, callback) {
+	off(event: string, callback: EventListener) {
 		const eventName = eventNameMap[event];
 		if (eventName) {
 			document.removeEventListener(eventName, callback, false);
@@ -136,23 +165,22 @@ let screenfull = {
 	raw: nativeAPI,
 };
 
-Object.defineProperties(screenfull, {
-	isFullscreen: {
-		get: () => Boolean(document[nativeAPI.fullscreenElement]),
-	},
-	element: {
-		enumerable: true,
-		get: () => document[nativeAPI.fullscreenElement] ?? undefined,
-	},
-	isEnabled: {
-		enumerable: true,
-		// Coerce to boolean in case of old WebKit.
-		get: () => Boolean(document[nativeAPI.fullscreenEnabled]),
-	},
-});
-
-if (!nativeAPI) {
-	screenfull = {isEnabled: false};
+if (nativeAPI) {
+	Object.defineProperties(screenfull, {
+		isFullscreen: {
+			get: () => Boolean((document as any)[nativeAPI.fullscreenElement]),
+		},
+		element: {
+			enumerable: true,
+			get: () => (document as any)[nativeAPI.fullscreenElement] ?? undefined,
+		},
+		isEnabled: {
+			enumerable: true,
+			get: () => Boolean((document as any)[nativeAPI.fullscreenEnabled]),
+		},
+	});
+} else {
+	screenfull = { isEnabled: false } as Screenfull;
 }
 
 export { screenfull };

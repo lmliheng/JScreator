@@ -168,9 +168,18 @@ import {
     requestUser,
     requestUserDetail,
     requestSelfUpdate,
-    requestBlogArticles
+    requestBlogArticles,
+    type UserItem,
+    type ArticleItem
 } from '../../composables/useRequest'
 import { api } from '../../composables/useAxiosConfig'
+
+interface SocialItem {
+    type: string
+    url: string
+    label: string
+    image?: boolean
+}
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -182,9 +191,9 @@ const selfId = computed(() => Number(authStore.userInfo?.user_detail?.id))
 // ===== 目标用户选择（admin） =====
 const selectedUsername = ref('')
 const targetUsername = ref('')
-const searchResult = ref([])
+const searchResult = ref<UserItem[]>([])
 const searchLoading = ref(false)
-const searchUsers = async (kw) => {
+const searchUsers = async (kw: string) => {
     if (!kw) {
         searchResult.value = []
         return
@@ -192,18 +201,17 @@ const searchUsers = async (kw) => {
     searchLoading.value = true
     try {
         const res = await requestUser({ keyword: kw, page: 1, pageSize: 20 })
-        searchResult.value = res.data.list || []
+        searchResult.value = (res.data as any)?.list || []
     } catch (e) {
         searchResult.value = []
     } finally {
         searchLoading.value = false
     }
 }
-const onSelectUser = (val) => {
+const onSelectUser = (val: string) => {
     if (val) loadTarget(val)
 }
 const switchToSelf = async () => {
-    // 切回自己：用 /sys/profile 里的 username
     const uname = authStore.userInfo?.user_detail?.username
     if (uname) {
         selectedUsername.value = uname
@@ -215,16 +223,15 @@ const switchToSelf = async () => {
 const loading = ref(false)
 const saving = ref(false)
 const form = reactive({ avatar: '', name: '', bio: '', area: '' })
-const socials = ref([])
-const featured = ref([])
-const articles = ref([])
+const socials = ref<SocialItem[]>([])
+const featured = ref<number[]>([])
+const articles = ref<ArticleItem[]>([])
 const articlesLoading = ref(false)
-const githubId = ref(null)
-const targetUserId = ref(null)
-// 当前目标是否为本人（GitHub 绑定仅本人可操作）
+const githubId = ref<string | null>(null)
+const targetUserId = ref<number | null>(null)
 const isSelfTarget = computed(() => Number(targetUserId.value) === Number(selfId.value))
 
-const loadTarget = async (username) => {
+const loadTarget = async (username: string) => {
     loading.value = true
     targetUsername.value = username
     Object.assign(form, { avatar: '', name: '', bio: '', area: '' })
@@ -233,77 +240,73 @@ const loadTarget = async (username) => {
     articles.value = []
     githubId.value = null
     try {
-        // 用户详情（含 socials / featured_articles / github_id）
-        // admin 可通过搜索拿到任意用户；普通用户固定查自己
-        let detailRes = null
+        let detailRes: any = null
         if (!isAdmin.value && username === authStore.userInfo?.user_detail?.username) {
             detailRes = await requestUserDetail(selfId.value)
         } else {
             detailRes = await requestUserDetailByUsername(username)
         }
-        if (detailRes && detailRes.data) {
-            const d = detailRes.data
+        if (detailRes && (detailRes as any).data) {
+            const d = (detailRes as any).data
             targetUserId.value = Number(d.id)
             form.avatar = d.avatar || ''
             form.name = d.name || ''
             form.bio = d.bio || ''
             form.area = d.area || ''
-            socials.value = Array.isArray(d.socials) ? d.socials.map(s => ({ ...s })) : []
+            socials.value = Array.isArray(d.socials) ? d.socials.map((s: SocialItem) => ({ ...s })) : []
             featured.value = (Array.isArray(d.featured_articles) ? d.featured_articles : []).map(Number)
             githubId.value = d.github_id || null
         }
-        // 该用户的已发布文章（精选池）
         articlesLoading.value = true
         try {
-            const artRes = await requestBlogArticles(username, { page: 1, pageSize: 100 })
-            articles.value = (artRes && artRes.data && artRes.data.list) || []
+            const artRes = await requestBlogArticles(username, { page: 1, pageSize: 100 }) as any
+            articles.value = (artRes?.data?.list) || []
         } catch (e) {
             articles.value = []
         } finally {
             articlesLoading.value = false
         }
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '加载用户主页设置失败')
     } finally {
         loading.value = false
     }
 }
 
-// 按用户名查用户 id（先搜列表再取详情）
-const requestUserDetailByUsername = async (username) => {
+const requestUserDetailByUsername = async (username: string) => {
     const listRes = await requestUser({ keyword: username, page: 1, pageSize: 20 })
-    const found = (listRes.data.list || []).find(u => u.username === username)
+    const found = ((listRes.data as any)?.list || []).find((u: UserItem) => u.username === username)
     if (!found) throw new Error('用户不存在')
-    return requestUserDetail(found.id)
+    return requestUserDetail(found.id!)
 }
 
 // ===== 精选文章 =====
-const articleTitle = (id) =>
+const articleTitle = (id: number) =>
     (articles.value.find((a) => Number(a.article_id) === Number(id)) || {}).title || `文章 #${id}`
-const toggleFeatured = (id) => {
+const toggleFeatured = (id: number) => {
     const nid = Number(id)
     const i = featured.value.findIndex((x) => Number(x) === nid)
     if (i >= 0) featured.value.splice(i, 1)
     else if (featured.value.length < 6) featured.value.push(nid)
     else ElMessage.warning('精选文章最多 6 篇')
 }
-const moveFeatured = (i, dir) => {
+const moveFeatured = (i: number, dir: number) => {
     const j = i + dir
     if (j < 0 || j >= featured.value.length) return
-    const tmp = featured.value[i]
-    featured.value[i] = featured.value[j]
+    const tmp = featured.value[i]!
+    featured.value[i] = featured.value[j]!
     featured.value[j] = tmp
 }
 
 // ===== 社交媒体 =====
 const newSocialUrl = ref('')
-const SOCIAL_LABELS = {
+const SOCIAL_LABELS: Record<string, string> = {
     github: 'GitHub', telegram: 'Telegram', qq: 'QQ', wechat: '微信', leetcode: '力扣',
     npm: 'npm', bilibili: 'B站', rss: 'RSS', email: '邮箱', phone: '电话',
     zhihu: '知乎', douban: '豆瓣', csu: '中南大学', custom: '链接',
 }
-const socialLabel = (t) => SOCIAL_LABELS[t] || '链接'
-const detectSocialType = (url) => {
+const socialLabel = (t: string) => SOCIAL_LABELS[t] || '链接'
+const detectSocialType = (url: string) => {
     const u = String(url || '').toLowerCase()
     if (u.includes('github')) return 'github'
     if (u.includes('t.me') || u.includes('telegram')) return 'telegram'
@@ -330,72 +333,74 @@ const addSocial = () => {
     socials.value.push({ type, url, label: socialLabel(type) })
     newSocialUrl.value = ''
 }
-const removeSocial = (i) => socials.value.splice(i, 1)
+const removeSocial = (i: number) => socials.value.splice(i, 1)
 
 // ===== 上传（头像 / 微信二维码） =====
-const avatarInput = ref(null)
+const avatarInput = ref<HTMLInputElement | null>(null)
 const uploadingAvatar = ref(false)
-const triggerAvatarUpload = () => avatarInput.value && avatarInput.value.click()
-const handleAvatarFile = async (e) => {
-    const file = e.target.files && e.target.files[0]
+const triggerAvatarUpload = () => avatarInput.value?.click()
+const handleAvatarFile = async (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const file = target.files && target.files[0]
     if (!file) return
     if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
         ElMessage.warning('仅支持 jpg/png/webp/gif 图片')
-        e.target.value = ''
+        target.value = ''
         return
     }
     if (file.size > 5 * 1024 * 1024) {
         ElMessage.warning('图片不能超过 5MB')
-        e.target.value = ''
+        target.value = ''
         return
     }
     uploadingAvatar.value = true
     try {
         const fd = new FormData()
         fd.append('image', file)
-        const res = await api.post('/upload/image', fd)
+        const res = await api.post('/upload/image', fd) as any
         if (res && res.data && res.data.url) form.avatar = res.data.url
         else ElMessage.error((res && res.message) || '上传失败')
-    } catch (err) {
+    } catch (err: any) {
         ElMessage.error(err?.response?.data?.message || '上传失败')
     } finally {
         uploadingAvatar.value = false
-        e.target.value = ''
+        target.value = ''
     }
 }
 
-const socialQrInput = ref(null)
+const socialQrInput = ref<HTMLInputElement | null>(null)
 const uploadingQr = ref(false)
-const triggerQrUpload = () => socialQrInput.value && socialQrInput.value.click()
-const handleQrFile = async (e) => {
-    const file = e.target.files && e.target.files[0]
+const triggerQrUpload = () => socialQrInput.value?.click()
+const handleQrFile = async (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const file = target.files && target.files[0]
     if (!file) return
     if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
         ElMessage.warning('仅支持 jpg/png/webp/gif 图片')
-        e.target.value = ''
+        target.value = ''
         return
     }
     if (file.size > 5 * 1024 * 1024) {
         ElMessage.warning('图片不能超过 5MB')
-        e.target.value = ''
+        target.value = ''
         return
     }
     uploadingQr.value = true
     try {
         const fd = new FormData()
         fd.append('image', file)
-        const res = await api.post('/upload/image', fd)
+        const res = await api.post('/upload/image', fd) as any
         if (res && res.data && res.data.url) {
             socials.value.push({ type: 'wechat', url: res.data.url, label: '微信', image: true })
             ElMessage.success('微信二维码已添加')
         } else {
             ElMessage.error((res && res.message) || '上传失败')
         }
-    } catch (err) {
+    } catch (err: any) {
         ElMessage.error(err?.response?.data?.message || '上传失败')
     } finally {
         uploadingQr.value = false
-        e.target.value = ''
+        target.value = ''
     }
 }
 
@@ -407,15 +412,13 @@ const unbindGithub = async () => {
         await api.post('/userInfo/unbind-github')
         githubId.value = null
         ElMessage.success('已解除 GitHub 绑定')
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '解绑失败')
     } finally {
         unbindingGithub.value = false
     }
 }
 const bindGithub = () => {
-    // 注意：后端绑定态只认当前登录 token 的用户；admin 代他人绑定暂不支持，
-    // 此按钮仅对"自己"生效。绑定后跳回本页。
     const base = api.defaults.baseURL || 'http://127.0.0.1:7000'
     const redirect = window.location.href.split('#')[0] + '#/user/home-setting'
     const rawToken = String(authStore.token || '').replace(/^Bearer\s+/i, '')
@@ -437,9 +440,9 @@ const save = async () => {
             avatar: form.avatar,
             socials: socials.value,
             featured_articles: featured.value,
-        })
+        } as UserItem)
         ElMessage.success('主页设置已保存')
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '保存失败')
     } finally {
         saving.value = false

@@ -4,7 +4,8 @@ import { useAuthStore } from '../../store/auth'
 import {
     requestUserInfo,
     requestSelfUpdate,
-    requestSelfResetPassword
+    requestSelfResetPassword,
+    type UserItem
 } from '../../composables/useRequest'
 import { ElMessage } from 'element-plus'
 import { api } from '../../composables/useAxiosConfig'
@@ -23,8 +24,8 @@ import {
 
 const authStore = useAuthStore()
 
-const permissionRead = (val) => {
-    const map = {
+const permissionRead = (val: string) => {
+    const map: Record<string, string> = {
         'user:create': '创建用户',
         'user:read': '读取用户信息',
         'user:update': '更新用户',
@@ -41,7 +42,7 @@ const permissionRead = (val) => {
     return map[val] || val
 }
 
-const detail = computed(() => authStore.userInfo?.user_detail || {})
+const detail = computed<UserItem>(() => authStore.userInfo?.user_detail || ({} as UserItem))
 const permissions = computed(() => authStore.userInfo?.user_permission || [])
 
 const refreshUserInfo = async () => {
@@ -69,42 +70,43 @@ const editForm = reactive({
     checkinDay: 0,
 })
 
-const avatarInput = ref(null)
+const avatarInput = ref<HTMLInputElement | null>(null)
 const uploadingAvatar = ref(false)
 
 const triggerAvatarUpload = () => {
     if (avatarInput.value) avatarInput.value.click()
 }
 
-const handleAvatarFile = async (e) => {
-    const file = e.target.files && e.target.files[0]
+const handleAvatarFile = async (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const file = target.files && target.files[0]
     if (!file) return
     if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
         ElMessage.warning('仅支持 jpg/png/webp/gif 图片')
-        e.target.value = ''
+        target.value = ''
         return
     }
     if (file.size > 5 * 1024 * 1024) {
         ElMessage.warning('图片不能超过 5MB')
-        e.target.value = ''
+        target.value = ''
         return
     }
     uploadingAvatar.value = true
     try {
         const formData = new FormData()
         formData.append('image', file)
-        const res = await api.post('/upload/image', formData)
+        const res = await api.post('/upload/image', formData) as any
         if (res && res.data && res.data.url) {
             editForm.avatar = res.data.url
             ElMessage.success('头像上传成功')
         } else {
             ElMessage.error((res && res.message) || '上传失败')
         }
-    } catch (err) {
+    } catch (err: any) {
         ElMessage.error(err?.response?.data?.message || '上传失败')
     } finally {
         uploadingAvatar.value = false
-        e.target.value = ''
+        target.value = ''
     }
 }
 
@@ -143,7 +145,7 @@ const submitEdit = async () => {
         ElMessage.success('资料更新成功')
         editVisible.value = false
         await refreshUserInfo()
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '更新失败')
     } finally {
         editLoading.value = false
@@ -169,7 +171,7 @@ const submitPwd = async () => {
         pwdVisible.value = false
         pwdForm.password = ''
         pwdForm.confirm = ''
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '重置失败')
     }
 }
@@ -204,7 +206,7 @@ const openTotp = async () => {
             totpSecret.value = res.data?.secret || ''
             const uri = res.data?.uri || ''
             totpQrUrl.value = await toDataURL(uri)
-        } catch (e) {
+        } catch (e: any) {
             ElMessage.error(e?.response?.data?.message || '获取绑定信息失败')
         } finally {
             totpBusy.value = false
@@ -215,10 +217,9 @@ const openTotp = async () => {
 }
 
 // otpauth URI → dataURL 二维码
-const toDataURL = (text) => {
+const toDataURL = (text: string): Promise<string> => {
     return new Promise((resolve) => {
         if (!text) return resolve('')
-        // 动态 import（webpack 会分包）
         import('qrcode').then((QRCode) => {
             QRCode.toDataURL(text, { width: 180, margin: 1 })
                 .then(resolve)
@@ -248,7 +249,7 @@ const confirmTotp = async () => {
         ElMessage.success('TOTP 绑定成功')
         totpBound.value = true
         totpVisible.value = false
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '绑定失败')
     } finally {
         totpBusy.value = false
@@ -267,7 +268,7 @@ const disableTotp = async () => {
         ElMessage.success('已解绑 TOTP')
         totpBound.value = false
         totpVisible.value = false
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '解绑失败')
     } finally {
         totpBusy.value = false

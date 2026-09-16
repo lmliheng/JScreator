@@ -1,14 +1,14 @@
 <script setup lang="ts">
 
-import { onMounted, ref, toHandlerKey, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useI18n } from 'vue-i18n'
-const { locale, t } = useI18n()
+const { t } = useI18n()
 
 import { checkTokenUsed } from '@/composables/useCheckTokenUsed'
 import { loginOut } from '@/composables/useLoginOut'
-import { requestUserInfo } from '@/composables/useRequest'
+import { requestUserInfo, type UserInfo as UserInfoType } from '@/composables/useRequest'
 
 import { useAuthStore } from '@/store/auth'
 import { usePathTagStore } from '@/store/pathTag'
@@ -17,7 +17,6 @@ import AsideCom from '@/components/AsideCom.vue'
 import i18nCom from '@/components/i18nCom.vue'
 import Breadcrumb from '@/components/Breadcrumb.vue'
 import FullScreen from '@/components/FullScreen.vue'
-import searchCom from '@/components/searchCom.vue'
 import tagView from '@/components/tagView.vue'
 import DriverCom from '@/components/DriverCom.vue'
 import NotificationBell from '@/components/NotificationBell.vue'
@@ -26,8 +25,8 @@ import { ElMessage } from 'element-plus'
 import { Fold, Expand } from '@element-plus/icons-vue'
 
 const isCollapse = ref(false)
-const routePath = useRoute() // 获取当前路由路径
-const UserInfo = ref({})
+const routePath = useRoute()
+const UserInfo = ref<UserInfoType>({} as UserInfoType)
 const authStore = useAuthStore()
 const pathTagStore = usePathTagStore()
 const loading = ref(false)

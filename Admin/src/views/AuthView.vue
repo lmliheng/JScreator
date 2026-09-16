@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import LoginCom from '../components/LoginCom.vue'
-import RegisterCom from '../components/RegisterCom.vue'
+
+import LoginCom from '@/components/LoginCom.vue'
+import RegisterCom from '@/components/RegisterCom.vue'
+
 const isLogin = ref(true)
 </script>
 

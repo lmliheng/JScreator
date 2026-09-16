@@ -1,23 +1,23 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { requestUserDetail } from '../composables/useRequest'
+import { requestUserDetail, type UserItem } from '../composables/useRequest'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
-const id = ref(route.params.id)
+const id = ref(route.params.id as string)
 const loading = ref(false)
-const userInfo = ref({})
+const userInfo = ref<UserItem>({} as UserItem)
 
-const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
+const formatTime = (v: string | undefined) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
 
 const getUserDetail = async () => {
     loading.value = true
     try {
-        const res = await requestUserDetail(id.value)
-        userInfo.value = res.data || {}
-    } catch (e) {
+        const res = await requestUserDetail(Number(id.value))
+        userInfo.value = (res as any).data || {}
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '获取用户详情失败')
     } finally {
         loading.value = false

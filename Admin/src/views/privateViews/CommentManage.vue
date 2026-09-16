@@ -1,19 +1,21 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted ,type Ref} from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
     requestCommentManageList,
     requestCommentManageUpdate,
-    requestCommentManageDelete
+    requestCommentManageDelete,
+    type CommentItem
 } from '@/composables/useRequest'
 
+import { formatTime } from '@/composables/useTool'
 const loading = ref(false)
-const list = ref([])
+const list:Ref<CommentItem[]> = ref([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
 const keyword = ref('')
-const selected = ref([])
+const selected:Ref<CommentItem[]|number[]> = ref([])
 
 const getList = async () => {
     loading.value = true
@@ -29,7 +31,7 @@ const getList = async () => {
         } else {
             ElMessage.error(res.message || '获取评论列表失败')
         }
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '获取评论列表失败')
     } finally {
         loading.value = false
@@ -47,13 +49,13 @@ const handleReset = () => {
     getList()
 }
 
-const handleSizeChange = (val) => {
+const handleSizeChange = (val:number) => {
     pageSize.value = val
     page.value = 1
     getList()
 }
 
-const handleCurrentChange = (val) => {
+const handleCurrentChange = (val:number) => {
     page.value = val
     getList()
 }
@@ -61,9 +63,9 @@ const handleCurrentChange = (val) => {
 // 编辑
 const editVisible = ref(false)
 const editLoading = ref(false)
-const editForm = reactive({ comment_id: null, nickname: '', content: '' })
+const editForm = reactive({ comment_id: 0, nickname: '', content: '' })
 
-const openEdit = (row) => {
+const openEdit = (row:CommentItem) => {
     editForm.comment_id = row.comment_id
     editForm.nickname = row.nickname || ''
     editForm.content = row.content || ''
@@ -80,7 +82,7 @@ const submitEdit = async () => {
         const res = await requestCommentManageUpdate({
             comment_id: editForm.comment_id,
             content: editForm.content.trim(),
-            nickname: editForm.nickname.trim() || undefined,
+            nickname: editForm.nickname.trim()!,
         })
         if (res.code === 200) {
             ElMessage.success('更新成功')
@@ -89,7 +91,7 @@ const submitEdit = async () => {
         } else {
             ElMessage.error(res.message || '更新失败')
         }
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '更新失败')
     } finally {
         editLoading.value = false
@@ -97,7 +99,7 @@ const submitEdit = async () => {
 }
 
 // 单条删除（级联删子评论）
-const handleDelete = (row) => {
+const handleDelete = (row:CommentItem) => {
     ElMessageBox.confirm('确定删除该评论吗？（其楼中楼回复会一并删除）', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -112,7 +114,7 @@ const handleDelete = (row) => {
                 } else {
                     ElMessage.error(res.message || '删除失败')
                 }
-            } catch (e) {
+            } catch (e:any) {
                 ElMessage.error(e?.response?.data?.message || '删除失败')
             }
         })
@@ -132,7 +134,7 @@ const handleBatchDelete = () => {
     })
         .then(async () => {
             try {
-                const res = await requestCommentManageDelete(selected.value)
+                const res = await requestCommentManageDelete(selected.value as number[])
                 if (res.code === 200) {
                     ElMessage.success(res.message || '删除成功')
                     selected.value = []
@@ -140,14 +142,13 @@ const handleBatchDelete = () => {
                 } else {
                     ElMessage.error(res.message || '删除失败')
                 }
-            } catch (e) {
+            } catch (e:any) {
                 ElMessage.error(e?.response?.data?.message || '删除失败')
             }
         })
         .catch(() => {})
 }
 
-const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
 
 onMounted(getList)
 </script>
@@ -174,7 +175,8 @@ onMounted(getList)
         </div>
 
         <!-- 评论列表 -->
-        <el-table :data="list" border stripe v-loading="loading" @selection-change="(val) => (selected = val.map((i) => i.comment_id))">
+        <el-table :data="list" border stripe v-loading="loading" @selection-change="(val:CommentItem[]) => (selected = val.map((i) => i.comment_id))">
+            <!-- 把 selected 类型变成了number[]-->
             <el-table-column type="selection" width="45" />
             <el-table-column align="center" prop="comment_id" label="ID" width="80" />
             <el-table-column align="center" label="所属文章" min-width="160" show-overflow-tooltip>

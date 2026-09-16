@@ -1,36 +1,36 @@
 // import { useAuthStore } from '../store/auto'
 import router from './index'
 import { useAuthStore } from '@/store/auth'
-import { requestUserInfo } from '@/composables/useRequest'
+import { requestUserInfo, type UserInfo } from '@/composables/useRequest'
 import { ElMessage } from 'element-plus'
 
 // 从 userInfo 中取 role_id。
 // /sys/profile 返回的 user_info 结构为 { user_detail: { role_id, role_name, ... }, user_permission: [...] }
-const getRoleId = (userInfo) => {
+const getRoleId = (userInfo: UserInfo | null | undefined) => {
     const id = userInfo?.user_detail?.role_id
-    if (id === undefined || id === null || id === '') return null
+    if (id === undefined || id === null) return null
     return Number(id)
 }
 
 // 判断当前用户角色是否在允许的角色列表内；roles 为空/未定义表示不限制
-const hasRole = (userInfo, roles) => {
+const hasRole = (userInfo: UserInfo | null | undefined, roles: unknown) => {
     if (!Array.isArray(roles) || roles.length === 0) return true
     const roleId = getRoleId(userInfo)
     if (roleId === null) return false
     return roles.includes(roleId)
 }
 
-
-
-router.beforeEach(async (to, from, next) => {
-    //const authStore = useAuthStore() // 在导航时调用，避免加载router配置后立即调用
-    // 为什么这里使用store token ，一刷新就会回到登录页 ，也就是没拿到token
+/**
+ * @next已经被弃用
+ */
+router.beforeEach(async (to, from) => {
     const whiteList = ['/auth']
 
     // 读取持久化的 auth（pinia-plugin-persistedstate 会存到 localStorage['auth']）
     let auth = null
     try {
-        auth = JSON.parse(localStorage.getItem('auth'))
+        const authStr = localStorage.getItem('auth')
+        auth = authStr ? JSON.parse(authStr) : null
     } catch (e) {
         auth = null
     }
@@ -38,17 +38,16 @@ router.beforeEach(async (to, from, next) => {
 
     if (!token) {
         if (whiteList.includes(to.path)) {
-            next()
+            return true
         } else {
-            next('/auth')
+            return '/auth'
         }
-        return
     }
 
     // 已登录访问登录页 → 回首页
     if (to.path === '/auth') {
-        next('/')
-        return
+
+        return '/'
     }
 
     // ===== 角色权限校验 =====
@@ -72,10 +71,10 @@ router.beforeEach(async (to, from, next) => {
 
         if (!hasRole(userInfo, roles)) {
             ElMessage.warning('没有访问该页面的权限')
-            next('/')
-            return
+            return '/'
+
         }
     }
 
-    next()
+    return true
 })

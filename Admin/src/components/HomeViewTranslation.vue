@@ -1,17 +1,21 @@
 <script setup lang="ts">
-// JavaScript 钩子逻辑...
+// Transition wrapper component - currently a placeholder
 </script>
 
 <template>
-  <!-- 包装内置的 Transition 组件 -->
-  <Transition
-    name="my-transition"
-    @enter="onEnter"
-    @leave="onLeave">
-    <slot></slot> <!-- 向内传递插槽内容 -->
+  <Transition name="my-transition">
+    <slot></slot>
   </Transition>
 </template>
 
 <style>
+.my-transition-enter-active,
+.my-transition-leave-active {
+  transition: opacity 0.3s ease;
+}
 
+.my-transition-enter-from,
+.my-transition-leave-to {
+  opacity: 0;
+}
 </style>

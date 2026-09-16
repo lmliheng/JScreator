@@ -5,6 +5,11 @@
 
  定义基础查询接口
 
+ -注册逻辑(amdin快速注册接口，普通用户注册接口)
+ -后台面包屑，导航栏页面配置
+ -应用设置(语言切换放应用设置里)
+
+
 ## 调试
 
 调试阶段，Token是根据ID生成的，系统重启不会影响token
@@ -60,6 +65,11 @@ curl -X GET http://localhost:7000/role/list -H "Content-Type: application/json" 
 curl -X GET http://localhost:7000/api-keys -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZV9pZCI6MSwiaWF0IjoxNzg5NDc3OTUzLCJleHAiOjE3OTAwODI3NTN9.ldzNRBFsIHtqfax0tIuYprDxO6A1RoseRs7Q6NwOa3I"
 ```
 
+/api-keys 创建
+```
+curl -X POST http://localhost:7000/api-keys -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZV9pZCI6MSwiaWF0IjoxNzg5NDc3OTUzLCJleHAiOjE3OTAwODI3NTN9.ldzNRBFsIHtqfax0tIuYprDxO6A1RoseRs7Q6NwOa3I" -d "{\"name\":\"测试\",\"scopes\":\"read\"}"
+```
+
 /api-keys/${id}/status
 ```
 curl -X PUT http://localhost:7000/api-keys/9/status -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZV9pZCI6MSwiaWF0IjoxNzg5NDc3OTUzLCJleHAiOjE3OTAwODI3NTN9.ldzNRBFsIHtqfax0tIuYprDxO6A1RoseRs7Q6NwOa3I" -d "{\"status\":\"0\"}"
@@ -79,6 +89,11 @@ curl -X GET http://localhost:7000/oauth/admin/clients -H "Content-Type: applicat
 /article/list
 ```
 curl -X GET http://localhost:7000/article/list -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZV9pZCI6MSwiaWF0IjoxNzg5NDc3OTUzLCJleHAiOjE3OTAwODI3NTN9.ldzNRBFsIHtqfax0tIuYprDxO6A1RoseRs7Q6NwOa3I"
+```
+
+/comment/manage/list
+```
+curl -X GET http://localhost:7000/comment/manage/list -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZV9pZCI6MSwiaWF0IjoxNzg5NDc3OTUzLCJleHAiOjE3OTAwODI3NTN9.ldzNRBFsIHtqfax0tIuYprDxO6A1RoseRs7Q6NwOa3I"
 ```
 
 

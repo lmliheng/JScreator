@@ -1,18 +1,23 @@
 <script setup lang="ts">
 // 这个场景搜索路由不太适合
-import { onMounted, ref, nextTick, watch } from 'vue'
+import { onMounted, ref } from 'vue'
+
+interface SearchOption {
+    value: string
+    label: string
+}
 
 const isSearch = ref(false)
-const searchSelect = ref(null)
+const searchSelect = ref<any>(null)
 
 
-const list = ref([])
-const options = ref([])
-const value = ref([])
+const list = ref<SearchOption[]>([])
+const options = ref<SearchOption[]>([])
+const value = ref<string[]>([])
 const loading = ref(false)
 
 
-const remoteMethod = (query) => {
+const remoteMethod = (query: string) => {
   if (query) {
     loading.value = true
     setTimeout(() => {

@@ -29,7 +29,7 @@ const emailForm = reactive({
 const emailLoading = ref(false)
 const sending = ref(false)
 const countdown = ref(0)
-let sendTimer = null
+let sendTimer: ReturnType<typeof setInterval> | null = null
 
 const submitForm = async () => {
     if (!ruleForm.username || !ruleForm.email || !ruleForm.password) {
@@ -46,7 +46,7 @@ const submitForm = async () => {
             username: ruleForm.username,
             email: ruleForm.email,
             password: ruleForm.password
-        })
+        }) as any
         if (res.code === 200) {
             ElMessage.success('注册成功')
             if (res.token) {
@@ -77,7 +77,7 @@ async function sendCode() {
         countdown.value = 60
         sendTimer = setInterval(() => {
             countdown.value--
-            if (countdown.value <= 0) clearInterval(sendTimer)
+            if (countdown.value <= 0 && sendTimer) clearInterval(sendTimer)
         }, 1000)
     } catch (e) {
         ElMessage.error('发送失败')

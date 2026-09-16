@@ -47,8 +47,8 @@
                         :current-page="likePage"
                         :page-size="likePageSize"
                         :page-sizes="[10, 20, 50]"
-                        @size-change="(v) => handleSizeChange(v, 'likes')"
-                        @current-change="(v) => handleCurrentChange(v, 'likes')"
+                        @size-change="(v: number) => handleSizeChange(v, 'likes')"
+                        @current-change="(v: number) => handleCurrentChange(v, 'likes')"
                     />
                 </div>
             </el-tab-pane>
@@ -99,8 +99,8 @@
                         :current-page="favoritePage"
                         :page-size="favoritePageSize"
                         :page-sizes="[10, 20, 50]"
-                        @size-change="(v) => handleSizeChange(v, 'favorites')"
-                        @current-change="(v) => handleCurrentChange(v, 'favorites')"
+                        @size-change="(v: number) => handleSizeChange(v, 'favorites')"
+                        @current-change="(v: number) => handleCurrentChange(v, 'favorites')"
                     />
                 </div>
             </el-tab-pane>
@@ -122,20 +122,20 @@ const activeTab = ref('likes')
 const keyword = ref('')
 
 // 点赞
-const likeList = ref([])
+const likeList = ref<any[]>([])
 const likeTotal = ref(0)
 const likePage = ref(1)
 const likePageSize = ref(10)
 const likeLoading = ref(false)
 
 // 收藏
-const favoriteList = ref([])
+const favoriteList = ref<any[]>([])
 const favoriteTotal = ref(0)
 const favoritePage = ref(1)
 const favoritePageSize = ref(10)
 const favoriteLoading = ref(false)
 
-const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
+const formatTime = (v: any) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
 
 const fetchLikes = async () => {
     likeLoading.value = true
@@ -147,7 +147,7 @@ const fetchLikes = async () => {
         })
         likeList.value = res.data.list || []
         likeTotal.value = res.data.total || 0
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '获取点赞记录失败')
     } finally {
         likeLoading.value = false
@@ -164,7 +164,7 @@ const fetchFavorites = async () => {
         })
         favoriteList.value = res.data.list || []
         favoriteTotal.value = res.data.total || 0
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '获取收藏记录失败')
     } finally {
         favoriteLoading.value = false
@@ -188,7 +188,7 @@ const handleSearch = () => {
     else fetchFavorites()
 }
 
-const handleSizeChange = (val, kind) => {
+const handleSizeChange = (val: number, kind: string) => {
     if (kind === 'likes') {
         likePageSize.value = val
         likePage.value = 1
@@ -200,7 +200,7 @@ const handleSizeChange = (val, kind) => {
     }
 }
 
-const handleCurrentChange = (val, kind) => {
+const handleCurrentChange = (val: number, kind: string) => {
     if (kind === 'likes') {
         likePage.value = val
         fetchLikes()
@@ -210,7 +210,7 @@ const handleCurrentChange = (val, kind) => {
     }
 }
 
-const handleDeleteLike = (row) => {
+const handleDeleteLike = (row: any) => {
     ElMessageBox.confirm(`确定删除「${row.article_title}」的这条点赞记录吗？`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -220,13 +220,13 @@ const handleDeleteLike = (row) => {
             await requestLikeManageDelete(row.id)
             ElMessage.success('删除成功')
             fetchLikes()
-        } catch (e) {
+        } catch (e: any) {
             ElMessage.error(e?.response?.data?.message || '删除失败')
         }
     }).catch(() => {})
 }
 
-const handleDeleteFavorite = (row) => {
+const handleDeleteFavorite = (row: any) => {
     ElMessageBox.confirm(`确定删除「${row.article_title}」的这条收藏记录吗？`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -236,7 +236,7 @@ const handleDeleteFavorite = (row) => {
             await requestFavoriteManageDelete(row.id)
             ElMessage.success('删除成功')
             fetchFavorites()
-        } catch (e) {
+        } catch (e: any) {
             ElMessage.error(e?.response?.data?.message || '删除失败')
         }
     }).catch(() => {})

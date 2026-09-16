@@ -1,17 +1,23 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+
+import { ref, reactive, computed, onMounted, watch,type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import {
     requestArticleList,
     requestArticleMine,
     requestArticleDelete,
-    requestArticleCategoryList
+    requestArticleCategoryList,
+    type CategoryItem,
+    type ArticleItem
 } from '@/composables/useRequest'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Notebook, FolderOpened, ChatDotRound } from '@element-plus/icons-vue'
 import CategoryManage from './CategoryManage.vue'
 import CommentManage from './CommentManage.vue'
+
+import {formatTime} from '@/composables/useTool.ts'
+
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -19,7 +25,7 @@ const authStore = useAuthStore()
 // 角色：1=admin(超级管理员)、2=user(普通用户)、3=editor(编辑)
 // admin/editor 管理所有人文章（调 /article/list），普通用户管理自己的（调 /article/mine）
 const isAdminOrEditor = computed(() => {
-    const detail = authStore.userInfo?.user_detail || {}
+    const detail = authStore.userInfo?.user_detail! || {}
     const id = Number(detail.role_id)
     if (id === 1 || id === 3) return true
     const name = String(detail.role_name || '').trim()
@@ -28,7 +34,7 @@ const isAdminOrEditor = computed(() => {
 
 // 仅管理员（role_id = 1）
 const isAdmin = computed(() => {
-    const detail = authStore.userInfo?.user_detail || {}
+    const detail = authStore.userInfo?.user_detail! || {}
     const id = Number(detail.role_id)
     if (id === 1) return true
     return String(detail.role_name || '').trim() === '超级管理员'
@@ -39,7 +45,7 @@ const activeTab = ref(localStorage.getItem('article_manage_tab') || 'articles')
 watch(activeTab, (v) => localStorage.setItem('article_manage_tab', v))
 
 const loading = ref(false)
-const articleList = ref([])
+const articleList:Ref<ArticleItem[]> = ref([])
 const total = ref(0)
 
 const page = ref(1)
@@ -50,20 +56,19 @@ const categoryId = ref(null)
 const statusFilter = ref('') // ''=全部，0=草稿，1=已发布，2=仅自己可见
 
 // 博客前端地址
-const blogBase = process.env.BLOG_ADDRESS
+const blogBase = import.meta.env.BLOG_ADDRESS
 
-const categoryList = ref([])
+const categoryList:Ref<CategoryItem[]> = ref([])
+
 // 普通用户：/article/mine 不支持 keyword/category 查询，故拉取全量后本地过滤分页
-const allMineList = ref([])
+const allMineList:Ref<ArticleItem[]> = ref([])
 
 // 状态映射：0-草稿，1-已发布，2-仅自己可见
-const statusMap = {
+const statusMap:Record<string,{label:string,type:string}> = {
     0: { label: '草稿', type: 'info' },
     1: { label: '已发布', type: 'success' },
     2: { label: '仅自己可见', type: 'warning' }
 }
-
-const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
 
 const getCategories = async () => {
     try {
@@ -74,6 +79,7 @@ const getCategories = async () => {
         console.error(e)
     }
 }
+
 
 // 普通用户模式下的本地过滤 + 分页
 const applyMineFilter = () => {
@@ -119,7 +125,7 @@ const loadList = async () => {
             allMineList.value = d.list || []
             applyMineFilter()
         }
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '获取文章列表失败')
     } finally {
         loading.value = false
@@ -140,7 +146,7 @@ const handleReset = () => {
     loadList()
 }
 
-const handleSizeChange = (val) => {
+const handleSizeChange = (val:number) => {
     pageSize.value = val
     page.value = 1
     if (isAdminOrEditor.value) {
@@ -150,7 +156,7 @@ const handleSizeChange = (val) => {
     }
 }
 
-const handleCurrentChange = (val) => {
+const handleCurrentChange = (val:number) => {
     page.value = val
     if (isAdminOrEditor.value) {
         loadList()
@@ -163,27 +169,27 @@ const handleCreate = () => {
     router.push('/article/article-create')
 }
 
-const handleEdit = (row) => {
+const handleEdit = (row:ArticleItem) => {
     router.push({ path: '/article/article-create', query: { id: row.article_id } })
 }
 
-const handleDelete = (row) => {
+const handleDelete = (row:ArticleItem) => {
     ElMessageBox.confirm(`确定删除文章「${row.title}」吗？`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
     }).then(async () => {
         try {
-            await requestArticleDelete(row.article_id)
+            await requestArticleDelete(row.article_id!)
             ElMessage.success('删除文章成功')
             loadList()
-        } catch (e) {
+        } catch (e:any) {
             ElMessage.error(e?.response?.data?.message || '删除失败')
         }
     }).catch(() => {})
 }
 
-const viewArticle = (row) => {
+const viewArticle = (row:ArticleItem) => {
     console.log(blogBase)
     window.open(`${blogBase}/article/${row.article_id}`, '_blank')
 }

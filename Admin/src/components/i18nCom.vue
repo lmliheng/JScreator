@@ -3,11 +3,11 @@
 import {onMounted} from 'vue'
 import { useLangStore } from '@/store/lang'
 import { useI18n } from 'vue-i18n'
-const { locale,t } = useI18n()
+const { locale } = useI18n()
 
 const langStore = useLangStore()
 
-const handleChangeLang = (val) => {
+const handleChangeLang = (val: string) => {
     locale.value = val
     langStore.setLang(val)
 }

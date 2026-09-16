@@ -9,7 +9,7 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import RolePermissionDialog from '../../components/RolePermissionDialog.vue'
 
-const roleList = ref([])
+const roleList = ref<any[]>([])
 const loading = ref(false)
 
 const permDialogVisible = ref(false)
@@ -24,15 +24,15 @@ const getRoleList = async () => {
     loading.value = true
     try {
         const res = await requestRoleList()
-        roleList.value = res.data.list || []
-    } catch (e) {
+        roleList.value = res.list || []
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '获取角色列表失败')
     } finally {
         loading.value = false
     }
 }
 
-const handleAssign = (row) => {
+const handleAssign = (row: any) => {
     currentRole.value = row
     permDialogVisible.value = true
 }
@@ -43,7 +43,7 @@ const openAdd = () => {
     nameDialogVisible.value = true
 }
 
-const openEdit = (row) => {
+const openEdit = (row: any) => {
     nameDialogMode.value = 'edit'
     Object.assign(nameForm, { role_id: row.role_id, role_name: row.role_name })
     nameDialogVisible.value = true
@@ -59,17 +59,17 @@ const submitName = async () => {
             await requestRoleAdd(nameForm.role_name)
             ElMessage.success('新增角色成功')
         } else {
-            await requestRoleUpdate(nameForm.role_id, nameForm.role_name)
+            await requestRoleUpdate(nameForm.role_id as unknown as number, nameForm.role_name)
             ElMessage.success('修改角色成功')
         }
         nameDialogVisible.value = false
         getRoleList()
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '操作失败')
     }
 }
 
-const handleDelete = (row) => {
+const handleDelete = (row: any) => {
     ElMessageBox.confirm('确定删除该角色吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -79,7 +79,7 @@ const handleDelete = (row) => {
             await requestRoleDelete(row.role_id)
             ElMessage.success('删除角色成功')
             getRoleList()
-        } catch (e) {
+        } catch (e: any) {
             ElMessage.error(e?.response?.data?.message || '删除失败')
         }
     }).catch(() => {})

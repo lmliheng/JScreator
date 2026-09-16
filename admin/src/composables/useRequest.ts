@@ -1,22 +1,24 @@
 import { api } from './useAxiosConfig'
 
 interface BaseResponse {
-    code: string,
+    code: number,
     success: boolean,
     message: string
 }
 
-interface LoginResponse extends BaseResponse {
-    token: string
-    user_info: UserItem
+interface BaseSearchRequest {
+    page: number
+    pageSize: number
+    keyword?: string
 }
+
 
 /**
  * @用户
  * 部分接口不会拿一些字段，部分字段保留undefined类型
  */
 
-interface UserItem {
+export interface UserItem {
     id?: number
     username: string
     name?: string
@@ -41,6 +43,12 @@ interface UserItem {
     article_count?: number
     comment_count?: number
 }
+
+interface LoginResponse extends BaseResponse {
+    token: string
+    user_info: UserItem
+}
+
 
 export const login = (account: string, password: string): Promise<LoginResponse> => api({
     url: '/sys/login',
@@ -72,7 +80,7 @@ export const sendEmailCode = (email: string) => api({
 })
 
 // 邮箱验证码登录
-export const emailLogin = (email: string, code: number) => api({
+export const emailLogin = (email: string, code: string): Promise<LoginResponse> => api({
     url: '/email/login',
     method: 'post',
     data: { email, code }
@@ -83,17 +91,19 @@ export const emailLogin = (email: string, code: number) => api({
 /**
  * @权限项
  */
-interface Permission {
+export interface Permission {
     permission_name: string
     permission_id: number
 }
 
-interface UserInfoResponse extends BaseResponse {
-    user_info: {
-        user_detail: UserItem
-        user_permission: Permission[]
-        login_time: string
-    }
+export interface UserInfo extends Partial<UserItem> {
+    user_detail?: UserItem
+    user_permission?: Permission[]
+    login_time?: string
+}
+
+export interface UserInfoResponse extends BaseResponse {
+    user_info: UserInfo
 }
 
 export const requestUserInfo = (): Promise<UserInfoResponse> => api({
@@ -119,7 +129,7 @@ interface UserListResponse {
         size: number      // 当前页实际返回的数量
     }
 }
-export const requestUser = (params: UserListRequest): Promise<UserListRequest> => api({
+export const requestUser = (params: UserListRequest): Promise<UserListResponse> => api({
     url: '/user-manage/list',
     method: 'get',
     params
@@ -265,7 +275,7 @@ interface NotificationForm {
     target_type: 'all' | 'user' | 'role'  // 发送目标类型
     target_id: number | null               // 目标 ID（all 时为 null）
     type: string                           // 通知类型
-    importance: 'low' | 'normal' | 'high'  // 重要性
+    importance: 'low' | 'medium' | 'high'  // 重要性
 }
 
 /**
@@ -333,25 +343,40 @@ export const requestApiStats = () => api({
  * 
  * @评论管理
  */
-interface CommentManageListRequest {
-    page: number
-    pageSize: number
-    keyword: string
+interface CommentManageListResponse extends BaseResponse {
+    data: {
+        list: CommentItem[];
+        total: number;
+        page: number;
+        pageSize: number;
+    };
 }
 
-export const requestCommentManageList = (params:CommentManageListRequest) => api({
-        url: '/comment/manage/list',
-        method: 'get',
-        params
-    })
+export interface CommentItem {
+    comment_id: number;
+    article_id?: number;
+    user_id?: number | null;      // 未登录用户为 null
+    nickname: string;            // 评论者昵称
+    content: string;             // 评论内容
+    parent_id?: number | null;    // 父评论ID，顶级评论为 null
+    created_at?: string;          // ISO 时间字符串
+    article_title?: string | null; // 文章标题，可能为 null
+    display_name?: string | null;  // 显示名称，可能为 null
+}
 
-export const requestCommentManageUpdate = (data:any) => api({
+export const requestCommentManageList = (params: BaseSearchRequest): Promise<CommentManageListResponse> => api({
+    url: '/comment/manage/list',
+    method: 'get',
+    params
+})
+
+export const requestCommentManageUpdate = (data: CommentItem): Promise<BaseResponse> => api({
     url: '/comment/manage/update',
     method: 'put',
     data
 })
 
-export const requestCommentManageDelete = (comment_ids:number[]) => api({
+export const requestCommentManageDelete = (comment_ids: number[]): Promise<BaseResponse> => api({
     url: '/comment/manage/delete',
     method: 'delete',
     data: { comment_ids }
@@ -362,30 +387,28 @@ export const requestCommentManageDelete = (comment_ids:number[]) => api({
  * @互动管理
  * 点赞和收藏
  */
-interface LikeManageListRequest {
-    page: number
-    pageSize: number
-    keyword: string
+interface LikeManageListRequest extends BaseSearchRequest {
+
 }
 
-export const requestLikeManageList = (params:LikeManageListRequest) => api({
+export const requestLikeManageList = (params: LikeManageListRequest) => api({
     url: '/social/admin/likes',
     method: 'get',
     params
 })
 
-export const requestLikeManageDelete = (id:number) => api({
+export const requestLikeManageDelete = (id: number) => api({
     url: `/social/admin/likes/${id}`,
     method: 'delete'
 })
 
-export const requestFavoriteManageList = (params:any) => api({
+export const requestFavoriteManageList = (params: any) => api({
     url: '/social/admin/favorites',
     method: 'get',
     params
 })
 
-export const requestFavoriteManageDelete = (id:number) => api({
+export const requestFavoriteManageDelete = (id: number) => api({
     url: `/social/admin/favorites/${id}`,
     method: 'delete'
 })
@@ -431,10 +454,10 @@ export const requestSelfResetPassword = (password: string) => api({
 interface ArticleListRequest {
     page: number,
     pageSize: number,
-    keyword: string,
-    author: string,
-    category_id: number,
-    status: number
+    keyword?: string,
+    author?: string,
+    category_id?: number,
+    status?: string // 待定
 }
 
 
@@ -443,19 +466,19 @@ interface ArticleListRequest {
  * @
  * 文章内容应该单独请求
  */
-interface ArticleItem {
-    article_id: number
+export interface ArticleItem {
+    article_id?: number
     title: string
     content?: string
-    status: 0 | 1
-    user_id: number
-    author_name: string
-    created_at: string
-    updated_at: string
-    like_count: number
-    favorite_count: number
-    category_ids: number[]
-    category_names: string[]
+    status: 0 | 1 | 2
+    user_id?: number
+    author_name?: string
+    created_at?: string
+    updated_at?: string
+    like_count?: number
+    favorite_count?: number
+    category_ids?: number[]
+    category_names?: string[]
 }
 
 interface ArticleListResponse {
@@ -517,7 +540,7 @@ export const requestArticleDelete = (id: number) => api({
  * @文章分类管理
  */
 
-interface CategoryItem {
+export interface CategoryItem {
     category_id: number
     category_name: string
     created_at: string
@@ -525,8 +548,8 @@ interface CategoryItem {
     user: number           // 创建者用户 ID
     author_name: string    // 创建者名称
 }
-interface CategoryListResponse extends BaseResponse {
 
+interface CategoryListResponse extends BaseResponse {
     data: {
         list: CategoryItem[]
     }
@@ -538,21 +561,21 @@ export const requestArticleCategoryList = (): Promise<CategoryListResponse> => a
 })
 
 // 新增分类
-export const requestArticleCategoryAdd = (category_name: string) => api({
+export const requestArticleCategoryAdd = (category_name: string): Promise<BaseResponse> => api({
     url: '/article/category/add',
     method: 'post',
     data: { category_name }
 })
 
 // 更新分类
-export const requestArticleCategoryUpdate = (category_id: number, category_name: string) => api({
+export const requestArticleCategoryUpdate = (category_id: number, category_name: string): Promise<BaseResponse> => api({
     url: '/article/category/update',
     method: 'put',
     data: { category_id, category_name }
 })
 
 // 删除分类
-export const requestArticleCategoryDelete = (category_id: number) => api({
+export const requestArticleCategoryDelete = (category_id: number): Promise<BaseResponse> => api({
     url: '/article/category/delete',
     method: 'delete',
     data: { category_id }
@@ -639,27 +662,24 @@ export const requestAdDelete = (id: number) => api({
     method: 'delete'
 })
 
-interface AnnounceListRequest {
-    page: number, // 页数
-    pageSize: number, // 一页的广告数量
-    keyword: string | undefined,  //按关键词查询
-    position: string | undefined  //按位置查询
+export interface AnnounceListRequest extends BaseSearchRequest {
+    status?: string//按位置查询
 }
 
-interface AnnounceListResponse extends BaseResponse {
-    list: {
-        data: Announce[],
+export interface AnnounceListResponse extends BaseResponse {
+    data: {
+        list: Announce[],
         total: number
         page: number
         pageSize: number
     }
 }
 
-interface Announce {
+export interface Announce {
     id?: number
     title: string
     content: string
-    status: number
+    status?: number
     created_at?: string
     updated_at?: string
 }
@@ -707,7 +727,7 @@ export const requestAnnounceDelete = (id: number) => api({
  * @API Key管理
  */
 
-interface ApiKeyItem {
+export interface ApiKeyItem {
     id?: number
     name: string
     key_prefix: string
@@ -717,8 +737,10 @@ interface ApiKeyItem {
     created_at?: string
 }
 
-interface ApiKeyListResponse extends BaseResponse {
-    list: ApiKeyItem[]
+export interface ApiKeyListResponse extends BaseResponse {
+    data: {
+        list: ApiKeyItem[]
+    }
 }
 
 export const requestApiKeyList = (): Promise<ApiKeyListResponse> => api({
@@ -726,7 +748,24 @@ export const requestApiKeyList = (): Promise<ApiKeyListResponse> => api({
     method: 'get'
 })
 
-export const requestApiKeyCreate = (data: ApiKeyItem) => api({
+
+export interface ApiKeyCreateRequest {
+    name: string
+    scopes: 'write' | 'read'
+}
+
+interface ApiKeyCreateResponse extends BaseResponse {
+    data: ApiKeyData;
+}
+
+// API Key 数据
+interface ApiKeyData {
+    plain: string;          // 完整的密钥明文
+    prefix: string;         // 密钥前缀
+    scopes: 'write' | 'read'        // 权限范围
+}
+
+export const requestApiKeyCreate = (data: ApiKeyCreateRequest): Promise<ApiKeyCreateResponse> => api({
     url: '/api-keys',
     method: 'post',
     data

@@ -7,26 +7,40 @@ import {
     requestRoleSetPermission
 } from '../composables/useRequest'
 
+interface PermissionItem {
+    permission_id: number
+    permission_name: string
+    permission_description?: string
+}
+
+interface RoleItem {
+    role_id: number
+    role_name: string
+}
+
 const props = defineProps({
     modelValue: {
         type: Boolean,
         default: false
     },
     role: {
-        type: Object,
+        type: Object as () => RoleItem | null,
         default: () => null
     }
 })
 
-const emit = defineEmits(['update:modelValue', 'success'])
+const emit = defineEmits<{
+    (e: 'update:modelValue', val: boolean): void
+    (e: 'success'): void
+}>()
 
 const visible = computed({
     get: () => props.modelValue,
     set: (val) => emit('update:modelValue', val)
 })
 
-const permissionList = ref([])
-const checkedIds = ref([])
+const permissionList = ref<PermissionItem[]>([])
+const checkedIds = ref<number[]>([])
 const loading = ref(false)
 
 const loadData = async () => {
@@ -37,9 +51,9 @@ const loadData = async () => {
             requestPermissionList(),
             requestRolePermission(props.role.role_id)
         ])
-        permissionList.value = permsRes.data.list || []
-        checkedIds.value = currentRes.data.permission_ids || []
-    } catch (e) {
+        permissionList.value = ((permsRes as any).data?.list) || []
+        checkedIds.value = ((currentRes as any).data?.permission_ids) || []
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '加载权限失败')
     } finally {
         loading.value = false
@@ -61,7 +75,7 @@ const save = async () => {
         ElMessage.success('分配权限成功')
         visible.value = false
         emit('success')
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '分配权限失败')
     } finally {
         loading.value = false

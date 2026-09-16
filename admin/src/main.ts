@@ -6,8 +6,10 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import 'element-plus/dist/index.css'
 import router from './router/index'
 import { createPinia } from 'pinia'
+
 import './router/NavigationGuards'
 import './asset/main.css'
+
 import i18n from './i18n/index'
 
 const app = createApp(App)

@@ -84,20 +84,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted,type Ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
     requestAnnounceList,
     requestAnnounceAdd,
     requestAnnounceUpdate,
     requestAnnounceStatus,
-    requestAnnounceDelete
+    requestAnnounceDelete,
+    type Announce
 } from '../../composables/useRequest'
 import {formatTime}from '@/composables/useTool'
 
 
 const loading = ref(false)
-const list = ref([])
+const list:Ref<Announce[]> = ref([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
@@ -109,7 +110,6 @@ const dialogMode = ref('add')
 const saving = ref(false)
 const form = reactive({ id: null, title: '', content: '' })
 
-const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
 
 const fetchList = async () => {
     loading.value = true
@@ -151,7 +151,7 @@ const openAdd = () => {
     dialogVisible.value = true
 }
 
-const openEdit = (row) => {
+const openEdit = (row:Announce) => {
     dialogMode.value = 'edit'
     Object.assign(form, { id: row.id, title: row.title || '', content: row.content || '' })
     dialogVisible.value = true
@@ -172,7 +172,7 @@ const submitForm = async () => {
             await requestAnnounceAdd({ title: form.title, content: form.content })
             ElMessage.success('公告已发布')
         } else {
-            await requestAnnounceUpdate(form.id, { title: form.title, content: form.content })
+            await requestAnnounceUpdate(form.id!, { title: form.title, content: form.content })
             ElMessage.success('公告已更新')
         }
         dialogVisible.value = false
@@ -184,10 +184,10 @@ const submitForm = async () => {
     }
 }
 
-const toggleStatus = async (row) => {
+const toggleStatus = async (row:Announce) => {
     const next = row.status === 1 ? 0 : 1
     try {
-        await requestAnnounceStatus(row.id, next)
+        await requestAnnounceStatus(row.id!, next)
         ElMessage.success(next === 1 ? '已启用' : '已停用')
         fetchList()
     } catch (e:any) {
@@ -195,14 +195,14 @@ const toggleStatus = async (row) => {
     }
 }
 
-const handleDelete = (row) => {
+const handleDelete = (row:Announce) => {
     ElMessageBox.confirm(`确定删除公告「${row.title}」吗？`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
     }).then(async () => {
         try {
-            await requestAnnounceDelete(row.id)
+            await requestAnnounceDelete(row.id!)
             ElMessage.success('删除成功')
             fetchList()
         } catch (e:any) {

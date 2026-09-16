@@ -9,18 +9,28 @@ import {
     requestNotificationRead
 } from '@/composables/useRequest'
 
+interface NotificationItem {
+    notification_id: number
+    title: string
+    content: string
+    type: string
+    importance: string
+    is_read: number | string
+    created_at: string
+}
+
 const router = useRouter()
 const unreadCount = ref(0)
-const list = ref([])
-let timer = null
+const list = ref<NotificationItem[]>([])
+let timer: number = 0
 
 // 详情弹窗
 const dialogVisible = ref(false)
-const current = ref(null)
+const current = ref<NotificationItem | null>(null)
 
-const typeMap = { system: '系统', announcement: '公告', reminder: '提醒' }
-const typeTagMap = { system: 'danger', announcement: 'success', reminder: 'warning' }
-const importanceMap = { high: '高', medium: '中', low: '低' }
+const typeMap: Record<string, string> = { system: '系统', announcement: '公告', reminder: '提醒' }
+const typeTagMap: Record<string, string> = { system: 'danger', announcement: 'success', reminder: 'warning' }
+const importanceMap: Record<string, string> = { high: '高', medium: '中', low: '低' }
 
 const hasUnread = computed(() => unreadCount.value > 0)
 
@@ -28,11 +38,11 @@ const fetchData = async () => {
     try {
         const countRes = await requestNotificationUnreadCount()
         if (countRes.code === 200 && countRes.data) {
-            unreadCount.value = countRes.data.unread_count || 0
+            unreadCount.value = (countRes.data as any).unread_count || 0
         }
         const listRes = await requestNotificationList()
         if (listRes.code === 200 && listRes.data) {
-            list.value = (listRes.data.list || []).slice(0, 8)
+            list.value = ((listRes.data as any).list || []).slice(0, 8)
             checkSystemNotif(list.value)
         }
     } catch (e) {
@@ -41,7 +51,7 @@ const fetchData = async () => {
 }
 
 // 系统级通知：登录后自动弹一次（未读的 system 通知）
-const checkSystemNotif = (items) => {
+const checkSystemNotif = (items: NotificationItem[]) => {
     const systemNotif = items.find((item) => item.type === 'system' && Number(item.is_read) === 0)
     if (!systemNotif) return
     const key = 'system_notif_shown_' + systemNotif.notification_id
@@ -53,7 +63,7 @@ const checkSystemNotif = (items) => {
     requestNotificationRead(systemNotif.notification_id).then(() => fetchData()).catch(() => {})
 }
 
-const openDetail = async (row) => {
+const openDetail = async (row: NotificationItem) => {
     current.value = row
     dialogVisible.value = true
     if (Number(row.is_read) === 0) {

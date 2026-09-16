@@ -1,20 +1,28 @@
 // 使用
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import { defineStore } from 'pinia'
+import { type UserItem, type Permission } from '@/composables/useRequest'
+import { type UserInfo } from '@/composables/useRequest'
+
 export const useAuthStore = defineStore('auth', () => {
+
+
   const token = ref('')
-  
-  const setToken = (newToken) => {
+
+  const setToken = (newToken: string) => {
     token.value = newToken
   }
 
-  const userInfo = ref({})
-  const setUserInfo = (newUserInfo) => { // 拿的对象存的字符串,存字符串不好拿键值对
+
+  const userInfo: Ref<UserInfo> = ref({})
+
+  const setUserInfo = (newUserInfo: UserInfo) => {
     userInfo.value = newUserInfo
   }
 
   const tokenTime = ref('')
-  const setTokenTime = (newTokenTime) => {
+
+  const setTokenTime = (newTokenTime: string) => {
     tokenTime.value = newTokenTime
   }
 

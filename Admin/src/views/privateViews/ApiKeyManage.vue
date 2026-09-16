@@ -103,25 +103,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted,type Ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/store/auth'
 import {
     requestApiKeyList,
     requestApiKeyCreate,
     requestApiKeyStatus,
-    requestApiKeyDelete
+    requestApiKeyDelete,
+    type ApiKeyItem
 } from '../../composables/useRequest'
+
+import {formatTime} from '@/composables/useTool'
 
 const authStore = useAuthStore()
 const roleId = computed(() => Number(authStore.userInfo?.user_detail?.role_id))
 // 仅 admin(1)/editor(3) 可建写权限 key
 const canWrite = computed(() => roleId.value === 1 || roleId.value === 3)
 
-const base_api=process.env.API_BASE
+const base_api=import.meta.env.API_BASE
 
 const loading = ref(false)
-const list = ref([])
+const list:Ref<ApiKeyItem[]> = ref([])
 const createVisible = ref(false)
 const creating = ref(false)
 const form = reactive({ name: '', writeScope: false })
@@ -129,14 +132,13 @@ const form = reactive({ name: '', writeScope: false })
 const plainVisible = ref(false)
 const plainKey = ref('')
 
-const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '-')
 
 const loadList = async () => {
     loading.value = true
     try {
         const res = await requestApiKeyList()
         list.value = res.data.list || []
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '获取 API Key 失败')
     } finally {
         loading.value = false
@@ -159,7 +161,7 @@ const submitCreate = async () => {
         plainKey.value = res.data.plain
         createVisible.value = false
         plainVisible.value = true
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '创建失败')
     } finally {
         creating.value = false
@@ -175,28 +177,28 @@ const copyPlain = async () => {
     }
 }
 
-const toggleStatus = async (row) => {
+const toggleStatus = async (row:ApiKeyItem) => {
     const next = row.status === 1 ? 0 : 1
     try {
-        await requestApiKeyStatus(row.id, next)
+        await requestApiKeyStatus(row.id!, next)
         ElMessage.success(next === 1 ? '已启用' : '已禁用')
         loadList()
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '操作失败')
     }
 }
 
-const handleDelete = (row) => {
+const handleDelete = (row:ApiKeyItem) => {
     ElMessageBox.confirm(`确定删除 API Key「${row.name}」（${row.key_prefix}…）吗？删除后立即失效。`, '提示', {
         confirmButtonText: '删除',
         cancelButtonText: '取消',
         type: 'warning'
     }).then(async () => {
         try {
-            await requestApiKeyDelete(row.id)
+            await requestApiKeyDelete(row.id!)
             ElMessage.success('已删除')
             loadList()
-        } catch (e) {
+        } catch (e:any) {
             ElMessage.error(e?.response?.data?.message || '删除失败')
         }
     }).catch(() => {})

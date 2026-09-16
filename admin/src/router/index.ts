@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 
 import HomeView from '../views/HomeView.vue'
 import AuthView from '../views/AuthView.vue'
@@ -13,6 +13,9 @@ import NotificationCenter from '../views/privateViews/NotificationCenter.vue'
 import NotificationManage from '../views/privateViews/NotificationManage.vue'
 import SystemMonitor from '../views/privateViews/SystemMonitor.vue'
 
+/**
+ * @后续路由要改成以身份划分
+ */
 const Routes = [
     {
         path: '/',
@@ -250,28 +253,15 @@ const Routes = [
         }
     },
     {
-      path: '/:pathMatch(.*)*',
-      name: 'NotFound',
-      component: ()=>import('@/views/404.vue')
+        path: '/:pathMatch(.*)*',
+        name: 'NotFound',
+        component: () => import('@/views/404.vue')
     }
 ]
 
-// const privateRoutes = [
-//     {
-//         path: '/',
-//         name: 'home',
-//         component: HomeView,
-//         meta: {
-//             title: 'home',
-//             icon: 'home',
-//         },
-//         children: [
-//             ]
-//     },
-
 
 const router = createRouter({
-    history: createWebHashHistory(import.meta.env.BASE_URL),
+    history: createWebHistory(import.meta.env.BASE_URL),
     routes: [...Routes]
 })
 

@@ -140,14 +140,14 @@ const form = reactive({
 
 const secretVisible = ref(false)
 const newCreds = reactive({ client_id: '', client_secret: '' })
-const API_BASE = process.env.API_BASE || 'http://127.0.0.1:7000'
+const API_BASE = import.meta.env.API_BASE || 'http://127.0.0.1:7000'
 
 const loadList = async () => {
     loading.value = true
     try {
         const res = await requestOAuthClientList()
         list.value = res.data.list || []
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '获取失败')
     } finally {
         loading.value = false
@@ -170,7 +170,7 @@ const openCreate = () => {
     dialogVisible.value = true
 }
 
-const openEdit = (row) => {
+const openEdit = (row:any) => {
     dialogMode.value = 'edit'
     Object.assign(form, {
         id: row.id,
@@ -223,30 +223,30 @@ const submitForm = async () => {
             dialogVisible.value = false
             secretVisible.value = true
         } else {
-            await requestOAuthClientUpdate(form.id, payload)
+            await requestOAuthClientUpdate(form.id!, payload)
             ElMessage.success('更新成功')
             dialogVisible.value = false
             loadList()
         }
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '保存失败')
     } finally {
         saving.value = false
     }
 }
 
-const toggleStatus = async (row) => {
+const toggleStatus = async (row:any) => {
     const next = row.status === 1 ? 0 : 1
     try {
         await requestOAuthClientStatus(row.id, next)
         ElMessage.success(next === 1 ? '已启用' : '已停用')
         loadList()
-    } catch (e) {
+    } catch (e:any) {
         ElMessage.error(e?.response?.data?.message || '操作失败')
     }
 }
 
-const handleDelete = (row) => {
+const handleDelete = (row:any) => {
     ElMessageBox.confirm(`确定删除应用「${row.name}」吗？删除后该应用的授权全部失效。`, '提示', {
         confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning'
     }).then(async () => {
@@ -254,13 +254,13 @@ const handleDelete = (row) => {
             await requestOAuthClientDelete(row.id)
             ElMessage.success('已删除')
             loadList()
-        } catch (e) {
+        } catch (e:any) {
             ElMessage.error(e?.response?.data?.message || '删除失败')
         }
     }).catch(() => {})
 }
 
-const copyText = async (text) => {
+const copyText = async (text:string) => {
     try {
         await navigator.clipboard.writeText(text)
         ElMessage.success('已复制')
@@ -269,7 +269,7 @@ const copyText = async (text) => {
     }
 }
 
-const oauthAuthorizeUrl = (clientId) => {
+const oauthAuthorizeUrl = (clientId:string) => {
     return `${API_BASE}/oauth/authorize?client_id=${clientId}&redirect_uri=你的回调地址&response_type=code`
 }
 

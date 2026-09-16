@@ -4,9 +4,9 @@ import { requestSystemMonitor, requestApiStats, requestBackupDownload } from '@/
 import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
-const data = ref(null)
-const apiStats = ref([])
-let timer = null
+const data = ref<any>(null)
+const apiStats = ref<any[]>([])
+let timer: ReturnType<typeof setInterval> | null = null
 
 // 数据库备份下载状态
 const backupLoading = ref(false)
@@ -28,14 +28,14 @@ const downloadBackup = async () => {
         } else {
             ElMessage.error('备份下载失败')
         }
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '备份下载失败')
     } finally {
         backupLoading.value = false
     }
 }
 
-const formatBytes = (bytes) => {
+const formatBytes = (bytes: any) => {
     if (bytes == null) return '-'
     if (bytes < 1024) return `${bytes} B`
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -43,7 +43,7 @@ const formatBytes = (bytes) => {
     return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`
 }
 
-const formatUptime = (seconds) => {
+const formatUptime = (seconds: any) => {
     if (seconds == null) return '-'
     const d = Math.floor(seconds / 86400)
     const h = Math.floor((seconds % 86400) / 3600)
@@ -55,13 +55,13 @@ const formatUptime = (seconds) => {
     return `${s} 秒`
 }
 
-const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '-')
+const formatTime = (v: any) => (v ? String(v).replace('T', ' ').slice(0, 19) : '-')
 
 // 接口路径拆分：path 形如 "GET /article/list"
-const methodOf = (p) => String(p || '').split(' ')[0] || ''
-const pathOf = (p) => String(p || '').split(' ').slice(1).join(' ') || String(p || '')
-const methodTag = (p) => {
-    const map = { GET: 'success', POST: 'primary', PUT: 'warning', DELETE: 'danger', PATCH: 'warning' }
+const methodOf = (p: any) => String(p || '').split(' ')[0] || ''
+const pathOf = (p: any) => String(p || '').split(' ').slice(1).join(' ') || String(p || '')
+const methodTag = (p: any) => {
+    const map: Record<string, string> = { GET: 'success', POST: 'primary', PUT: 'warning', DELETE: 'danger', PATCH: 'warning' }
     return map[methodOf(p)] || 'info'
 }
 
@@ -84,7 +84,7 @@ const loadData = async () => {
         } else {
             ElMessage.error(res.message || '获取系统监控失败')
         }
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '获取系统监控失败')
     } finally {
         loading.value = false

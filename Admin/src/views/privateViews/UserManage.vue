@@ -10,7 +10,8 @@ import {
     requestUserDeleteBatch,
     requestUserDetail,
     requestUserResetPassword,
-    requestRoleList
+    requestRoleList,
+    type UserItem
 } from '../../composables/useRequest'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -21,9 +22,9 @@ const authStore = useAuthStore()
 const isAdmin = computed(() => Number(authStore.userInfo?.user_detail?.role_id) === 1)
 
 const loading = ref(false)
-const userList = ref([])
+const userList = ref<UserItem[]>([])
 const total = ref(0)
-const roleList = ref([])
+const roleList = ref<any[]>([])
 const keyword = ref('')
 const page = ref(1)
 const pageSize = ref(10)
@@ -55,7 +56,7 @@ const resetPasswordForm = reactive({
     confirm: ''
 })
 
-const formatTime = (v) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
+const formatTime = (v: any) => (v ? String(v).replace('T', ' ').slice(0, 19) : '')
 
 const getUser = async () => {
     loading.value = true
@@ -63,11 +64,11 @@ const getUser = async () => {
         const res = await requestUser({
             page: page.value,
             pageSize: pageSize.value,
-            keyword: keyword.value.trim() || undefined
+            keyword: keyword.value.trim() || ''
         })
         userList.value = res.data.list || []
         total.value = res.data.total || 0
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '获取用户列表失败')
     } finally {
         loading.value = false
@@ -79,13 +80,13 @@ const handleSearch = () => {
     getUser()
 }
 
-const handleSizeChange = (val) => {
+const handleSizeChange = (val: number) => {
     pageSize.value = val
     page.value = 1
     getUser()
 }
 
-const handleCurrentChange = (val) => {
+const handleCurrentChange = (val: number) => {
     page.value = val
     getUser()
 }
@@ -93,7 +94,7 @@ const handleCurrentChange = (val) => {
 const getRoles = async () => {
     try {
         const res = await requestRoleList()
-        roleList.value = res.data.list || []
+        roleList.value = (res as any).list || (res as any).data?.list || []
     } catch (e) {
         // 角色列表获取失败不阻塞页面
         console.error(e)
@@ -118,7 +119,7 @@ const openAdd = () => {
     dialogVisible.value = true
 }
 
-const openEdit = async (row) => {
+const openEdit = async (row: any) => {
     dialogMode.value = 'edit'
     editLoading.value = true
     // 先用列表行数据填充基础字段
@@ -139,7 +140,7 @@ const openEdit = async (row) => {
     // 列表可能不含扩展字段，拉取详情补全，避免提交时用空值覆盖
     try {
         const res = await requestUserDetail(row.id)
-        const d = res.data || {}
+        const d = (res as any).data || res || {}
         Object.assign(form, {
             id: d.id ?? form.id,
             username: d.username ?? form.username,
@@ -174,15 +175,15 @@ const submitForm = async () => {
                 username: form.username,
                 email: form.email,
                 password: form.password,
-                role_id: form.role_id
-            })
+                role_id: form.role_id ?? undefined
+            } as any)
             ElMessage.success('新增用户成功')
         } else {
             await requestUpdateUserFull({
-                id: form.id,
+                id: form.id ?? undefined,
                 username: form.username,
                 email: form.email,
-                role_id: form.role_id,
+                role_id: form.role_id ?? undefined,
                 vip: Number(form.vip) || 0,
                 area: form.area || '',
                 bio: form.bio || '',
@@ -194,12 +195,12 @@ const submitForm = async () => {
         }
         dialogVisible.value = false
         getUser()
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '操作失败')
     }
 }
 
-const handleResetPassword = (row) => {
+const handleResetPassword = (row: any) => {
     resetPasswordForm.id = row.id
     resetPasswordForm.username = row.username
     resetPasswordForm.password = ''
@@ -219,19 +220,19 @@ const submitResetPassword = async () => {
     passwordLoading.value = true
     try {
         await requestUserResetPassword({
-            id: resetPasswordForm.id,
+            id: resetPasswordForm.id as unknown as number,
             password: resetPasswordForm.password
         })
         ElMessage.success('重置密码成功')
         passwordDialogVisible.value = false
-    } catch (e) {
+    } catch (e: any) {
         ElMessage.error(e?.response?.data?.message || '重置密码失败')
     } finally {
         passwordLoading.value = false
     }
 }
 
-const handleDelete = (row) => {
+const handleDelete = (row: any) => {
     ElMessageBox.confirm('确定删除该用户吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -241,16 +242,16 @@ const handleDelete = (row) => {
             await requestUserDelete(row.id)
             ElMessage.success('删除用户成功')
             getUser()
-        } catch (e) {
+        } catch (e: any) {
             ElMessage.error(e?.response?.data?.message || '删除失败')
         }
     }).catch(() => {})
 }
 
 // 批量删除
-const selectedIds = ref([])
-const handleSelectionChange = (rows) => {
-    selectedIds.value = rows.map(r => r.id)
+const selectedIds = ref<number[]>([])
+const handleSelectionChange = (rows: any[]) => {
+    selectedIds.value = rows.map((r: any) => r.id)
 }
 
 const handleBatchDelete = () => {
@@ -268,18 +269,18 @@ const handleBatchDelete = () => {
             ElMessage.success('批量删除成功')
             selectedIds.value = []
             getUser()
-        } catch (e) {
+        } catch (e: any) {
             ElMessage.error(e?.response?.data?.message || '批量删除失败')
         }
     }).catch(() => {})
 }
 
-const handleDetail = (row) => {
+const handleDetail = (row: any) => {
     router.push('/user/user-info/' + row.id)
 }
 
 // 跳转「主页设置」页并预选该用户（admin 可设置任意用户的主页）
-const handleHomeSetting = (row) => {
+const handleHomeSetting = (row: any) => {
     router.push({ path: '/user/home-setting', query: { username: row.username } })
 }
 

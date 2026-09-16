@@ -1,24 +1,27 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted,defineEmits,defineProps } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { usePathTagStore } from '@/store/pathTag'
 import { useRoute } from 'vue-router'
 const route = useRoute()
+
 const props = defineProps({
   isShow: Boolean
 })
 
 const pathTagStore = usePathTagStore()
 
+const emit = defineEmits<{
+    (e: 'close'): void
+}>()
+
 const closeAllTag = () => {
     pathTagStore.removeAllPathTags(route)
     emit('close')
 }
 
-const emit = defineEmits(['close'])
-
-const handleClickOutside = (e) => {
+const handleClickOutside = (e: MouseEvent) => {
   // 如果菜单显示且点击的目标不在菜单内部，则触发关闭
-  if (props.isShow && !e.target.closest('.contextmenu-container')) {
+  if (props.isShow && !(e.target as Element).closest('.contextmenu-container')) {
     emit('close')
   }
 }

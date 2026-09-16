@@ -1,11 +1,21 @@
 import axios from 'axios'
+import type { AxiosInstance } from 'axios'
 
-const api = axios.create({
+// 扩展 AxiosResponse 类型，支持后端返回的自定义字段
+declare module 'axios' {
+    interface AxiosResponse<T = any> {
+        code?: number
+        success?: boolean
+        message?: string
+        token?: string
+    }
+}
+
+const api: AxiosInstance = axios.create({
     baseURL: import.meta.env.API_BASE || 'http://127.0.0.1:7000',
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
-        // 'icode': 'helloqianduanxunlianying'
     }
 })
 

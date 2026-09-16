@@ -1,6 +1,7 @@
 <script setup lang="ts">
     import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 
+    // @ts-ignore - toast-ui editor types not properly exported
     import Editor from '@toast-ui/editor';
     import '@toast-ui/editor/dist/toastui-editor.css';
     import '@toast-ui/editor/dist/i18n/zh-cn';
@@ -8,7 +9,6 @@
     import { ElMessage } from 'element-plus'
 
     const props = defineProps({
-        // markdown 内容（v-model）
         modelValue: {
             type: String,
             default: ''
@@ -22,11 +22,14 @@
             default: '请输入文章内容…'
         }
     })
-    const emit = defineEmits(['update:modelValue', 'fullscreen-change'])
+    const emit = defineEmits<{
+        (e: 'update:modelValue', val: string): void
+        (e: 'fullscreen-change', val: boolean): void
+    }>()
 
-    const editorEl = ref(null)
+    const editorEl = ref<HTMLDivElement | null>(null)
     const isFullscreen = ref(false)
-    let editor = null
+    let editor: any = null
 
     onMounted(() => {
         editor = new Editor({
@@ -38,49 +41,43 @@
             placeholder: props.placeholder,
             initialValue: props.modelValue || '',
             hooks: {
-                // 工具栏/拖拽/粘贴图片：上传到阿里 OSS 后把 URL 插入 markdown
-                addImageBlobHook: async (blob, callback) => {
+                addImageBlobHook: async (blob: Blob, callback: (url: string, alt: string) => void) => {
                     const formData = new FormData()
                     formData.append('image', blob)
                     try {
-                        const res = await api.post('/upload/image', formData)
+                        const res = await api.post('/upload/image', formData) as any
                         if (res && res.data && res.data.url) {
-                            callback(res.data.url, blob.name || 'image')
+                            callback(res.data.url, (blob as File).name || 'image')
                         } else {
                             ElMessage.error((res && res.message) || '图片上传失败')
                         }
-                    } catch (e) {
+                    } catch (e: any) {
                         ElMessage.error(e?.response?.data?.message || '图片上传失败')
                     }
                 },
             },
         })
-        // 用户编辑时同步 markdown 内容给父组件
         editor.on('change', () => {
             emit('update:modelValue', editor.getMarkdown())
         })
-        // 全屏时 Esc 退出
         window.addEventListener('keydown', handleEsc)
     })
 
-    // 父组件（编辑场景）异步回填内容时同步进编辑器
     watch(() => props.modelValue, (val) => {
         if (editor && val !== editor.getMarkdown()) {
             editor.setMarkdown(val || '')
         }
     })
 
-    const handleEsc = (e) => {
+    const handleEsc = (e: KeyboardEvent) => {
         if (e.key === 'Escape' && isFullscreen.value) {
             setFullscreen(false)
         }
     }
 
-    const setFullscreen = (v) => {
+    const setFullscreen = (v: boolean) => {
         isFullscreen.value = v
-        // 通知父组件（父组件据此显示/隐藏全屏 overlay）
         emit('fullscreen-change', v)
-        // 全屏时编辑器高度铺满
         if (editor) {
             editor.setHeight(v ? '100%' : props.height)
         }
@@ -88,7 +85,8 @@
             requestAnimationFrame(() => {
                 const el = editorEl.value
                 if (el && el.querySelector('.toastui-editor-md-container')) {
-                    el.querySelector('.toastui-editor-md-container').style.height = '100%'
+                    const container = el.querySelector('.toastui-editor-md-container') as HTMLElement
+                    if (container) container.style.height = '100%'
                 }
             })
         }
@@ -112,7 +110,6 @@
 <template>
     <div class="editor-shell" :class="{ 'editor-fullscreen': isFullscreen }">
         <div ref="editorEl" class="editor-body"></div>
-        <!-- 全屏切换按钮 -->
         <button
             class="editor-fs-btn"
             type="button"
@@ -130,7 +127,6 @@
 </template>
 
 <style scoped>
-/* ---- 编辑器外观定制（现代风格，与 Element Plus 统一） ---- */
 .editor-shell {
     position: relative;
     width: 100%;
@@ -139,7 +135,6 @@
     height: 100%;
 }
 
-/* 编辑器容器圆角卡片 */
 .editor-body :deep(.toastui-editor-defaultUI) {
     border: 1px solid #e4e7ed;
     border-radius: 8px;
@@ -179,7 +174,6 @@
     background: #fbfbfd;
 }
 
-/* 全屏切换按钮：悬浮在编辑器右上角 */
 .editor-fs-btn {
     position: absolute;
     top: 48px;

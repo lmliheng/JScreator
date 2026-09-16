@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed,watch } from 'vue'
-import { usePathTagStore } from '@/store/pathTag'
-import { useRoute } from 'vue-router'
-import {useRouter} from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
+import { usePathTagStore, type PathTagItem } from '@/store/pathTag'
+import { useRoute, useRouter } from 'vue-router'
 import contextmenu from './contextmenu.vue'
 
 const router = useRouter()
@@ -17,17 +16,15 @@ const contextmenuLocationStyle = ref({
     left: '0',
     position: 'absolute'
 })
-const type=ref('primary')
-const removeTag = (tag) => {
+const type = ref('primary')
+const removeTag = (tag: PathTagItem) => {
     pathTagStore.removePathTag(tag)
 }
-const toTag = (tag) => {
+const toTag = (tag: PathTagItem) => {
     router.push(tag.fullPath)
 }
 
-const handleContextMenu = (e,tag) => {
-    
-   //  console.log(e.x,e.y) 获取右键点击的坐标
+const handleContextMenu = (e: MouseEvent, tag: PathTagItem) => {
    contextmenuLocationStyle.value.top = e.y + 'px'
    contextmenuLocationStyle.value.left = e.x + 'px'
    isShow.value = true
@@ -53,7 +50,7 @@ onMounted(() => {
     size="large"
     id="tagview"
     >
-    {{ $t(tag.meta.title) }}
+    {{ $t(String(tag.meta.title || '')) }}
     </el-tag>
 
     <contextmenu 
