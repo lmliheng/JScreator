@@ -24,7 +24,7 @@ const hasRole = (userInfo: UserInfo | null | undefined, roles: unknown) => {
  * @next已经被弃用
  */
 router.beforeEach(async (to, from) => {
-    const whiteList = ['/auth']
+    const whiteList = ['/auth', '/forgot-password']
 
     // 读取持久化的 auth（pinia-plugin-persistedstate 会存到 localStorage['auth']）
     let auth = null

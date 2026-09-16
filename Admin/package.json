@@ -16,7 +16,9 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@sentry/vue": "^10.74.0",
     "@toast-ui/editor": "^3.2.2",
+    "@vicons/ionicons5": "^0.13.0",
     "@vueuse/core": "^14.4.0",
     "axios": "^1.15.2",
     "driver.js": "^1.4.0",

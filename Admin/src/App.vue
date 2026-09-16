@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router' 
+import { RouterView } from 'vue-router'
 </script>
+
 <template>
-  <RouterView />
+  <n-config-provider>
+    <n-message-provider>
+      <n-dialog-provider>
+        <RouterView />
+      </n-dialog-provider>
+    </n-message-provider>
+  </n-config-provider>
 </template>
-<style scoped>
-h1 {
-  color: #42b883;
-}
-</style>

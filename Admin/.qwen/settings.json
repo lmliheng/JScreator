@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(gratis.naiveadmin.com)"
+    ]
+  },
+  "$version": 4
+}

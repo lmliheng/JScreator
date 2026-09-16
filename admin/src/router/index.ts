@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
 
 import HomeView from '../views/HomeView.vue'
 import AuthView from '../views/AuthView.vue'
+import ForgotPassword from '../views/ForgotPassword.vue'
 import UserProfile from '../views/privateViews/UserProfile.vue'
 import UserInfo from '../views/UserInfo.vue'
 import ArticleManage from '../views/privateViews/ArticleManage.vue'
@@ -17,6 +18,12 @@ import SystemMonitor from '../views/privateViews/SystemMonitor.vue'
  * @后续路由要改成以身份划分
  */
 const Routes = [
+    {
+        path: '/error',
+        name: 'error_page',
+        redirect: '/error',
+        component: () => import('@/views/ErrorPage.vue'),
+    },
     {
         path: '/',
         name: 'home',
@@ -249,6 +256,15 @@ const Routes = [
         meta: {
             title: 'auth',
             icon: 'auth',
+            private: false,
+        }
+    },
+    {
+        path: '/forgot-password',
+        name: 'forgot-password',
+        component: ForgotPassword,
+        meta: {
+            title: '忘记密码',
             private: false,
         }
     },
